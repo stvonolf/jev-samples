@@ -1,0 +1,6 @@
+.venv/
+__pycache__/
+*.pyc
+~$*.pptx
+samples/ui/.decision_cache.json
+samples/ui/.decision_cache.tmp
