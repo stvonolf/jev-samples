@@ -343,16 +343,13 @@ def slide_2(prs):
         text(s, x + 0.22, 2.68, 3.6, 0.5, [q], size=14.5)
         text(s, x + 0.22, 3.2, 3.6, 0.45, [a], size=15, color=color, font=MONO)
 
-    flow(s, 0.5, 4.3, 1.92, 0.9, [("State", "text or JSON", PANEL_2), ("Questions", "Choice · Score · Noul", PANEL_2),
+    flow(s, 0.5, 4.3, 3.08, 0.9, [("State", "text or JSON", PANEL_2), ("Questions", "Choice · Score · Noul", PANEL_2),
                                   ("Answers", "+ confidence", SCORE), ("Your code", "act · review · escalate", PANEL_2)])
-    bullets(s, 0.5, 5.5, 7.2, 1.4, [
-        ("All questions answered together ", "in ~0.1 s"),
-        ("Text only; ", "calibrated over many decisions, not each one"),
-    ], size=15, gap=8)
-
-    picture(s, ASSETS / "yt_VE5dsWll06M.jpg", 8.3, 3.95, 4.55, link=VIDEO_3)
-    caption(s, 8.3, 6.56, 4.55, [("▶  LangChain: Jev in the agent harness - routing · auto mode · judge", {})],
-            link=VIDEO_3)
+    bullets(s, 0.5, 5.55, 12.3, 1.4, [
+        ("All questions answered together ", "in ~0.1 s · text only · calibrated over many decisions, not each one"),
+        ("Where it fits: ", "model routing · tool-call guardrails · LLM-as-judge around your agent"),
+    ], size=16, gap=10)
+    caption(s, 0.5, 6.75, 12.3, [("▶  LangChain: “Building a Harness with Jev”", {})], link=VIDEO_3)
     notes(s, NOTES["how"])
 
 
