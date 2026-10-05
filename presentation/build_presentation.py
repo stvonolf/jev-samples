@@ -347,9 +347,10 @@ def slide_2(prs):
                                   ("Answers", "+ confidence", SCORE), ("Your code", "act · review · escalate", PANEL_2)])
     bullets(s, 0.5, 5.55, 12.3, 1.4, [
         ("All questions answered together ", "in ~0.1 s · text only · calibrated over many decisions, not each one"),
-        ("Where it fits: ", "model routing · tool-call guardrails · LLM-as-judge around your agent"),
+        ("Where it fits: ", "any repetitive judgement in your product - classify, prioritise, check; LLMs keep the writing"),
     ], size=16, gap=10)
-    caption(s, 0.5, 6.75, 12.3, [("▶  LangChain: “Building a Harness with Jev”", {})], link=VIDEO_3)
+    caption(s, 0.5, 6.75, 12.3, [("▶  More: LangChain “Building a Harness with Jev” (routing, guardrails, judge)", {})],
+            link=VIDEO_3)
     notes(s, NOTES["how"])
 
 
