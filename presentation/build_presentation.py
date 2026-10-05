@@ -2,7 +2,8 @@
 
 Run from the repo root:  .venv\\Scripts\\python.exe presentation\\build_presentation.py
 Images: YouTube thumbnails (credited + linked), a terminal screenshot rendered from a real
-run of samples/06_agent_harness.py, everything else is native, editable PowerPoint shapes.
+run of samples/06_agent_harness.py and MP4 clips recorded from samples/07_ui_demos.py;
+everything else is native, editable PowerPoint shapes. Speaker notes live in speaker_notes.py.
 """
 from pathlib import Path
 
@@ -14,6 +15,8 @@ from pptx.enum.shapes import MSO_SHAPE
 from pptx.enum.text import MSO_ANCHOR, PP_ALIGN
 from pptx.oxml.ns import qn
 from pptx.util import Inches, Pt
+
+from speaker_notes import NOTES
 
 HERE = Path(__file__).parent
 ASSETS = HERE / "assets"
@@ -276,426 +279,200 @@ def render_terminal(path):
 
 
 # ------------------------------------------------------------------ slides
+def card(slide, x, y, w, h, color, title, items, url, url_label, size=14):
+    box(slide, x, y, w, h, fill=PANEL)
+    box(slide, x, y, w, 0.07, fill=color, shape=MSO_SHAPE.RECTANGLE)
+    text(slide, x + 0.2, y + 0.18, w - 0.35, 0.45, [title], size=17, bold=True, color=color)
+    text(slide, x + 0.2, y + 0.75, w - 0.35, h - 1.2,
+         [[("•  ", {"color": color}), (item, {})] for item in items], size=size, color=TEXT, space_after=6)
+    link(slide, x + 0.2, y + h - 0.45, w - 0.35, url_label, url, size=11, color=color)
+
+
+def flow(slide, x, y, step_w, h, steps, gap=0.12):
+    """Chevron flow: steps = [(title, subtitle, fill)]."""
+    for i, (title, sub, color) in enumerate(steps):
+        shape = MSO_SHAPE.PENTAGON if i == 0 else MSO_SHAPE.CHEVRON
+        chev = box(slide, x + i * (step_w - 0.12 + gap), y, step_w, h, fill=color, shape=shape)
+        dark = color in (CHOICE, SCORE, NOUL, GREEN)
+        lines = [[(title, {"bold": True, "size": 13})]] + ([[(sub, {"size": 10})]] if sub else [])
+        text(slide, 0, 0, 0, 0, lines, color=BG if dark else TEXT, align=PP_ALIGN.CENTER,
+             anchor=MSO_ANCHOR.MIDDLE, shape=chev)
+
+
 def slide_1(prs):
     s = prs.slides.add_slide(prs.slide_layouts[6])
     set_bg(s)
     text(s, 0.5, 0.32, 7, 0.3, [f"JEV · TEAM BRIEFING  ·  1 / {SLIDES}"], size=11, color=SCORE, bold=True)
-    text(s, 0.5, 0.62, 7.6, 1.3, [[("Jev: AI that ", {}), ("decides", {"color": CHOICE}),
-                                  (",\nnot chats", {})]], size=36, bold=True, spacing=0.95)
-    text(s, 0.5, 2.0, 7.4, 0.6, [[("TypeSafe AI: ", {"color": MUTED}),
-                                  ("“We took the opposite research direction - not chat.” ", {"color": TEXT, "italic": True}),
-                                  ("Its first System One model makes typed, calibrated decisions for software.", {"color": MUTED})]],
-         size=14)
-    bullets(s, 0.5, 2.75, 7.35, 4.1, [
-        ("What it is.  ", "Input = a state (text, JSON or arrays of text; no images or audio yet) + typed "
-                          "questions. Output = typed answers with calibrated probabilities. No text "
-                          "generation: nothing to parse, no broken schema."),
-        ("Why it exists.  ", "RLHF made LLMs great at chat, but brings mode dropping, overconfidence and "
-                             "unreliability - so they need a human in the loop. Automation needs thousands "
-                             "of reliable decisions."),
-        ("How it is built.  ", "New architecture, new sampler and a new training algorithm: RLCD "
-                               "(reinforcement learning for calibrated decisions) - honest probabilities score best."),
-        ("Speed and cost.  ", "All questions in one parallel pass. TypeSafe: 193.6× faster, 444.6× cheaper "
-                              "on System One workflows (0.11 s / $0.00008 vs 8.6 s / $0.014); "
-                              "$42 per billion input tokens, output free."),
-        ("Not an LLM replacement.  ", "It cannot write, explain or plan. Jev is System 1 (fast "
-                                      "intuition); LLMs stay System 2 (slow reasoning). Use both."),
-    ], size=13, gap=8)
+    text(s, 0.5, 0.62, 7.0, 1.3, [[("Jev: AI that ", {}), ("decides", {"color": CHOICE}),
+                                  (",\nnot chats", {})]], size=40, bold=True, spacing=0.95)
+    text(s, 0.5, 2.15, 6.8, 0.5, ["TypeSafe AI's first “System One” model"], size=17, color=MUTED)
+    bullets(s, 0.5, 3.0, 6.7, 2.9, [
+        ("Text in → ", "typed decisions + probabilities out"),
+        ("One parallel pass: ", "~0.1 s, ~200× faster and ~400× cheaper than an LLM*"),
+        ("Fast “System 1” ", "next to the LLM's slow “System 2” - not a replacement"),
+    ], size=19, gap=18)
+    text(s, 0.5, 5.75, 6.8, 0.3, ["* TypeSafe's own benchmark on System One workflows"], size=10, color=MUTED)
 
-    picture(s, ASSETS / "yt_vj7hysh0mOI.jpg", 8.3, 0.45, 4.55, link=VIDEO_1)
-    caption(s, 8.3, 3.04, 4.6, [("Video: ", {}), ("“Jev explained in 7min..” – Caleb Writes Code", {})],
-            link=VIDEO_1)
-
-    # Same question, two ways (LangChain demo: "Is there PII in this text?")
-    box(s, 8.3, 3.5, 4.55, 3.55, fill=PANEL)
-    text(s, 8.45, 3.6, 4.3, 0.35, [[("Same question, two models: ", {"bold": True}),
-                                    ("“Is there PII in this text?”", {"color": MUTED})]], size=11.5)
-    rows = [("LLM", RED, ["prompt", "token · token · token …", "text → parse"], "≈ 5 s"),
-            ("Jev", GREEN, ["state + question", "1 parallel pass", "noul = 0.98"], "≈ 0.1 s")]
-    for i, (label, color, steps, t) in enumerate(rows):
-        y = 4.1 + i * 1.3
-        text(s, 8.45, y, 1.0, 0.3, [label], size=13, bold=True, color=color)
-        text(s, 11.85, y, 0.9, 0.3, [t], size=13, bold=True, color=color, align=PP_ALIGN.RIGHT)
-        for j, step in enumerate(steps):
-            bx = box(s, 8.45 + j * 1.45, y + 0.38, 1.3, 0.58, fill=PANEL_2, line=color if j == 2 else None)
-            text(s, 0, 0, 0, 0, [step], size=10, color=TEXT, align=PP_ALIGN.CENTER,
-                 anchor=MSO_ANCHOR.MIDDLE, shape=bx)
-            if j < 2:
-                text(s, 8.45 + j * 1.45 + 1.27, y + 0.47, 0.22, 0.4, ["›"], size=16, color=MUTED,
-                     align=PP_ALIGN.CENTER)
-    caption(s, 8.45, 6.68, 4.3, [("Demo from “Building a Harness with Jev” – LangChain", {})], link=VIDEO_3)
+    picture(s, ASSETS / "yt_vj7hysh0mOI.jpg", 7.55, 0.55, 5.3, link=VIDEO_1)
+    caption(s, 7.55, 3.58, 5.3, [("▶  “Jev explained in 7min..” – Caleb Writes Code", {})], link=VIDEO_1)
+    for i, (label, value, sub, color) in enumerate([("LLM", "≈ 5 s", "text, then parse", RED),
+                                                    ("Jev", "≈ 0.1 s", "noul = 0.98", GREEN)]):
+        x = 7.55 + i * 2.72
+        box(s, x, 4.15, 2.58, 1.75, fill=PANEL, line=color)
+        text(s, x + 0.18, 4.25, 2.3, 0.3, [label], size=13, bold=True, color=color)
+        text(s, x + 0.18, 4.6, 2.3, 0.7, [value], size=32, bold=True)
+        text(s, x + 0.18, 5.35, 2.3, 0.45, [sub], size=11, color=MUTED)
+    caption(s, 7.55, 6.0, 5.3, [("“Is there PII in this text?” – LangChain demo", {})], link=VIDEO_3)
     link(s, 0.5, 6.9, 7.3, "github.com/stvonolf/jev-samples", REPO, size=12, prefix="Slides, samples & UI demos:  ")
-
-    notes(s, """
-WHAT: Jev (TypeSafe AI, early access since Sept 2026) is the first "System One" model. You send a state and typed questions (choice / score / noul) to POST /v1/systemone and get typed answers with probabilities back. No text generation.
-
-TYPESAFE'S OWN POSITIONING (typesafe.ai): "an AI lab building machine-native intelligence infrastructure for automation". "We took the opposite research direction - not chat": RLHF optimises for human preference and produces superhuman instruction followers, but also mode dropping, overconfidence and a lack of reliability, so LLMs need humans in the loop. System One models are built to be used natively by machines, with a new architecture, a new sampler and a new training algorithm (RLCD). Taglines: "Decisions, not strings", "calibrated confidence", "more like code: reliable, fast, type-safe". Headline claim: 193.6x faster and 444.6x cheaper on workflows for System One tasks (their demo: $0.000081 in 0.114 s vs an LLM at $0.013880 in 8.566 s); $42 per billion input tokens (= $0.042 per million), "238x lower input price than Claude Fable 5.1". They also claim "zero hallucinations" - read that as "always a valid typed answer", not "always right". All vendor-reported.
-
-SYSTEM ONE (docs.typesafe.ai/concepts/system-one): text input only (strings, JSON objects, arrays of text) - images, audio and video are not supported yet. Calibration is measured across groups of predictions; it does not guarantee that a single answer is correct. No replies, no code, no explanations of reasoning.
-
-WHY (Caleb Writes Code, "Jev explained in 7min"): the AI stack's application layer pushed models toward chat (RLHF) and coding agents (RLVR). Workflow automation never crossed the cost/speed threshold, even with very capable models. TypeSafe argues that forcing chat/agent-optimised models into automation is the wrong approach and trains for calibrated decisions instead (RLCD). Most community demos show off speed (sorting email, RAG, games, model routing) rather than depth - LLMs can do these functionally, but not at 70-500 ms, because they generate tokens one after another.
-
-HOW FAST/CHEAP: video 1 quotes 40-200x faster at 70-500 ms end-to-end; LangChain quotes 20-200x faster and 40-400x cheaper on classification-style tasks; TypeSafe's homepage says 193.6x faster / 444.6x cheaper on System One workflows. Price $0.042 per 1M input tokens, output free (~$0.0004 per decision).
-
-NAME: System 1 / System 2 from Kahneman, "Thinking, Fast and Slow".
-
-LANGCHAIN DEMO: "Is there PII in this text?" - LLM writes an answer + structured output in ~5 s; Jev returns 0.98 almost instantly.
-
-Takeaway from video 1: this is less about Jev's novelty and more about the use-case space growing horizontally - narrow, specialised models next to general LLMs.
-""")
+    notes(s, NOTES["what"])
 
 
 def slide_2(prs):
     s = prs.slides.add_slide(prs.slide_layouts[6])
     set_bg(s)
     header(s, f"HOW IT WORKS  ·  2 / {SLIDES}", "Three primitives, one parallel call",
-           "Like logic gates and registers: your code owns the control flow, Jev answers narrow typed questions.")
-
-    cards = [
-        ("Choice", CHOICE, "Pick one option from a set you define (up to 255).",
-         "Which team should handle this ticket?", "choice: \"billing\"\np = .84 · confidence = .60"),
-        ("Score", SCORE, "Rate on ordered levels you describe (2–10).",
-         "How frustrated is the customer?\ncalm · frustrated · very angry", "score: 1.04\n(frustrated, not very angry)"),
-        ("Noul", NOUL, "Yes/no question → probability of “yes”.",
-         "Does the message convey urgency?", "noul: 0.999"),
-    ]
-    for i, (name, color, desc, q, a) in enumerate(cards):
+           "Your code owns the flow - Jev answers narrow, typed questions.")
+    cards = [("Choice", CHOICE, "Which team should handle this ticket?", "billing  (p 0.84)"),
+             ("Score", SCORE, "How frustrated is the customer?", "1.04 → frustrated"),
+             ("Noul", NOUL, "Does the message convey urgency?", "0.999 → yes")]
+    for i, (name, color, q, a) in enumerate(cards):
         x = 0.5 + i * 4.17
-        box(s, x, 1.8, 4.0, 2.3, fill=PANEL)
-        box(s, x, 1.8, 4.0, 0.07, fill=color, shape=MSO_SHAPE.RECTANGLE)
-        text(s, x + 0.2, 1.95, 3.6, 0.45, [name], size=22, bold=True, color=color)
-        text(s, x + 0.2, 2.45, 3.6, 0.4, [desc], size=11.5, color=MUTED)
-        text(s, x + 0.2, 2.85, 3.6, 0.6, [q], size=12.5, color=TEXT)
-        text(s, x + 0.2, 3.42, 3.6, 0.6, [a], size=12, color=color, font=MONO)
+        box(s, x, 1.85, 4.0, 1.95, fill=PANEL)
+        box(s, x, 1.85, 4.0, 0.07, fill=color, shape=MSO_SHAPE.RECTANGLE)
+        text(s, x + 0.22, 2.02, 3.6, 0.5, [name], size=26, bold=True, color=color)
+        text(s, x + 0.22, 2.68, 3.6, 0.5, [q], size=14.5)
+        text(s, x + 0.22, 3.2, 3.6, 0.45, [a], size=15, color=color, font=MONO)
 
-    # request / response
-    box(s, 0.5, 4.3, 6.15, 2.75, fill=PANEL)
-    text(s, 0.68, 4.38, 5.9, 0.3, ["One request, three answers (support-ticket example from the docs)"],
-         size=11, color=MUTED, bold=True)
-    code = [
-        [("POST", {"color": SCORE}), (" /v1/systemone", {})],
-        [("{ ", {}), ("\"state\"", {"color": NOUL}),
-         (": \"My Stripe connection has failed for 3 days.", {})],
-        [("            I'm losing sales. Please help ASAP.\",", {})],
-        [("  ", {}), ("\"questions\"", {"color": NOUL}), (": {", {})],
-        [("    \"team\":   {", {}), ("\"type\": \"choice\"", {"color": CHOICE}),
-         (", \"criteria\": {\"billing\": …}},", {})],
-        [("    \"mood\":   {", {}), ("\"type\": \"score\"", {"color": SCORE}),
-         (", \"criteria\": [\"calm\", …]},", {})],
-        [("    \"urgent\": {", {}), ("\"type\": \"noul\"", {"color": NOUL}),
-         (", \"instructions\": \"Urgent?\"} } }", {})],
-        [("→ team = billing (.84) · mood = 1.04 · urgent = 0.999", {"color": GREEN})],
-    ]
-    text(s, 0.68, 4.75, 5.9, 2.3, code, size=11.5, font=MONO, color=TEXT, spacing=1.1)
-    text(s, 0.68, 6.55, 5.9, 0.45, [[("Good to know: ", {"bold": True, "color": TEXT}),
-                                     ("text input only (strings, JSON, arrays) · calibration holds across many "
-                                      "predictions, not for every single answer", {})]], size=10, color=MUTED)
+    flow(s, 0.5, 4.3, 1.92, 0.9, [("State", "text or JSON", PANEL_2), ("Questions", "Choice · Score · Noul", PANEL_2),
+                                  ("Answers", "+ confidence", SCORE), ("Your code", "act · review · escalate", PANEL_2)])
+    bullets(s, 0.5, 5.5, 7.2, 1.4, [
+        ("All questions answered together ", "in ~0.1 s"),
+        ("Text only; ", "calibrated over many decisions, not each one"),
+    ], size=15, gap=8)
 
-    # harness use cases (LangChain video)
-    box(s, 6.85, 4.3, 5.98, 2.75, fill=PANEL)
-    text(s, 7.03, 4.38, 5.7, 0.3, [[("Where it fits: around the LLM in the agent loop", {"bold": True}),
-                                    ("  (LangChain)", {"color": MUTED})]], size=11.5)
-    bullets(s, 7.03, 4.78, 5.65, 2.2, [
-        ("Model routing.  ", "Pick the cheapest LLM that can handle each request, almost instantly."),
-        ("Auto mode.  ", "Classify every tool call (delete DB, mass send) and block risky ones "
-                         "before they run - fast enough to keep it switched on."),
-        ("Jev-as-a-judge.  ", "Score agent answers against a rubric (correct? grounded? cited?) "
-                              "for online evals: cheaper, faster and more consistent than LLM-as-judge."),
-    ], size=11.5, gap=6, marker_color=GREEN)
-    caption(s, 7.03, 6.7, 5.7, [("Video: “Building a Harness with Jev” – LangChain  ·  "
-                                 "pip install langchain-typesafe", {})], link=VIDEO_3)
-
-    notes(s, """
-PRIMITIVES (all three videos + docs.typesafe.ai/api):
-- Choice: map of option -> rubric (or null). Returns choice, probabilities per option, confidence. Max 255 options.
-- Score: ordered array of level descriptions (2-10). Returns a probability-weighted score that can land between levels (1.04 = frustrated, not very angry), plus legend/probabilities/confidence.
-- Noul: yes/no; returns P(yes). Optional criteria for what true/false mean.
-- Many questions about one state are answered in ONE parallel pass - adding questions barely changes latency (unlike LLMs, which reason sequentially).
-- Instructions and criteria can be structured JSON; refer to state fields in backticks.
-
-Caleb's framing: "It almost feels like we're back to logic gates and registers" - you build abstractions on top. On the Pareto frontier Jev competes with Flash/Nano-class models, but only on workflow-specific tasks.
-
-DOCS PATTERNS: confidence-gated routing (the answer tells you WHAT, confidence tells you WHETHER to act), composite scoring (atomic scores, weights in code), speculative fan-out (ask everything in one call, code decides what is relevant), intent routing.
-
-SYSTEM ONE WORKFLOW (docs.typesafe.ai/concepts/system-one) - refund request: 1) build a state with the customer's message, the relevant transactions and the refund policy; 2) ask independent questions together (refund requested? evidence of a duplicate charge? does the policy support a refund?); 3) combine the answers with deterministic checks in code and route the case for action or review. Confidence decides when to act and when to escalate to a person or a reasoning model. Inputs are text only (strings, JSON objects, arrays of text); calibration holds across groups of predictions, not for every single answer.
-
-LANGCHAIN ("Building a Harness with Jev"): langchain-typesafe exposes TypeSafeClassifier plus experimental middleware: ModelRouterMiddleware (fast vs powerful model per request) and AutoModeMiddleware (tool-risk gating). Jev-as-a-judge for LangSmith online evals: rubric criteria scored by Jev - reported as cheaper, faster and more consistent than LLM judges. Sample 06 in our repo implements all three ideas.
-""")
+    picture(s, ASSETS / "yt_VE5dsWll06M.jpg", 8.3, 3.95, 4.55, link=VIDEO_3)
+    caption(s, 8.3, 6.56, 4.55, [("▶  LangChain: Jev in the agent harness - routing · auto mode · judge", {})],
+            link=VIDEO_3)
+    notes(s, NOTES["how"])
 
 
 def slide_3(prs, demos_png):
     s = prs.slides.add_slide(prs.slide_layouts[6])
     set_bg(s)
-    header(s, f"FOR MARKETING SOFTWARE  ·  3 / {SLIDES}", "Thousands of tiny marketing decisions, in milliseconds")
-
-    rows = [
-        ["Use case", "Question Jev answers", "Primitive"],
-        ["Lead scoring & routing", "How well does the lead fit our ICP? How ready to buy? Who owns it?", "Score + Choice"],
-        ["Campaign reply triage", "Meeting, not now, unsubscribe, out of office, wrong person?", "Choice + Noul"],
-        ["Search terms & negatives", "Buyer, researcher, job seeker, competitor or junk?", "Choice"],
-        ["Ad creative tagging", "Hook, format, offer, awareness stage? (724 ads in 40 s ≈ $0.09)", "Choice ×4"],
-        ["SEO internal linking", "Is there an honest reason to link page A to page B?", "Noul"],
-        ["Social listening", "Engagement bait? Sentiment? Complaint, question or churn?", "Noul + Score"],
-        ["Content QA gate", "Does this draft meet each of the 20 checklist points?", "Noul ×20"],
-        ["AI assistant harness", "Fast or powerful LLM? Is this tool call risky? Is the claim grounded?", "Choice + Noul"],
-    ]
-    table(s, 0.5, 1.4, 7.75, [2.05, 4.35, 1.35], rows, row_h=0.43, size=11.5,
-          col_colors={2: primitive_color})
+    header(s, f"FOR MARKETING SOFTWARE  ·  3 / {SLIDES}", "Thousands of tiny marketing decisions")
+    items = [("Lead scoring & routing", "Score + Choice"), ("Reply & intent triage", "Choice + Noul"),
+             ("Ad, SEO & content tagging at scale", "Choice · Noul"),
+             ("Social listening & AI guardrails", "Noul + Score")]
+    lines = [[("▸  ", {"color": SCORE, "bold": True}), (use, {"bold": True}),
+              (f"    {prim}", {"color": primitive_color(prim), "bold": True, "size": 14})] for use, prim in items]
+    text(s, 0.5, 1.65, 7.1, 3.4, lines, size=19, space_after=18)
 
     with Image.open(demos_png) as im:
-        img_h = 4.33 * im.height / im.width
-    picture(s, demos_png, 8.5, 1.4, 4.33, link=VIDEO_2)
-    caption(s, 8.5, 1.4 + img_h + 0.04, 4.35,
-            [("Video: “Jev Is WAY More Powerful Than We Thought” – Pursuing AI", {})], link=VIDEO_2)
-    text(s, 8.5, 1.4 + img_h + 0.42, 4.35, 1.6, [
-        [("SEO: ", {"bold": True, "color": TEXT}), ("586 pages in 45 s, 584 links placed, 139 rejected, "
-                                                    "$0.21 (Claude Opus 5: 21 pages, $1.43)", {})],
-        [("Also: ", {"bold": True, "color": TEXT}), ("driving sim, trolley problem 100/100, designer's "
-                                                     "emoji explorer, voice-controlled drawing app, live slop "
-                                                     "detector, Laya playing Snake at ~60 decisions/s", {})],
-        [("We rebuilt two of them ", {"bold": True, "color": SCORE}), ("→ slide 6", {"color": SCORE})],
-    ], size=10.5, color=MUTED, space_after=4)
+        img_h = 5.0 * im.height / im.width
+    picture(s, demos_png, 7.85, 1.5, 5.0, link=VIDEO_2)
+    caption(s, 7.85, 1.5 + img_h + 0.05, 5.0, [("▶  “Jev Is WAY More Powerful Than We Thought” – Pursuing AI", {})],
+            link=VIDEO_2)
+    text(s, 7.85, 1.5 + img_h + 0.5, 5.0, 0.5, [[("586 pages · 45 s · $0.21", {"bold": True})]], size=22)
+    text(s, 7.85, 1.5 + img_h + 1.0, 5.0, 0.4, ["SEO internal links placed by Jev (Claude Opus 5: 21 pages, $1.43)"],
+         size=11, color=MUTED)
 
-    # decide-then-act loop
-    text(s, 0.5, 5.4, 8, 0.3, [[("The decide-then-act loop", {"bold": True}),
-                                ("  ·  same architecture for every row above", {"color": MUTED})]], size=12)
-    steps = [("Collect", "rows via API / code", PANEL_2), ("Shortlist", "rules or embeddings", PANEL_2),
-             ("Ask Jev", "Choice · Score · Noul", CHOICE), ("Threshold", "auto · review · drop", SCORE),
-             ("LLM writes", "only what passed", PANEL_2), ("Verify", "Jev checks the output", NOUL)]
-    for i, (title, sub, color) in enumerate(steps):
-        shape = MSO_SHAPE.PENTAGON if i == 0 else MSO_SHAPE.CHEVRON
-        chev = box(s, 0.5 + i * 2.06, 5.78, 2.2, 0.82, fill=color, shape=shape)
-        dark = color in (CHOICE, SCORE, NOUL)
-        text(s, 0, 0, 0, 0, [[(title, {"bold": True, "size": 12.5})], [(sub, {"size": 9.5})]],
-             color=BG if dark else TEXT, align=PP_ALIGN.CENTER, anchor=MSO_ANCHOR.MIDDLE, shape=chev)
-    text(s, 0.5, 6.72, 12.4, 0.5, [[
-        ("Limits: ", {"bold": True, "color": RED}),
-        ("no rationale (a number, not a reason) · closed answer sets, text input only · “zero hallucinations” "
-         "means always a valid type, not always the right answer · triage-grade accuracy "
-         "(vendor benchmark ~68% vs ~73% for frontier LLMs) · early access, price may change. "
-         "If the answer must be written, it belongs to an LLM.", {})]], size=11, color=MUTED)
-
-    notes(s, """
-MARKETING USE CASES (TypeSafe use-case map: lead generation, advertising, customer support, moderation; Ryze AI "Jev for Marketing: 8 use cases and the limits"):
-- Lead scoring and routing: score each lead against the ICP and pick the owner - two questions, one call. Sales gets the top band, the rest goes to nurture. (A 700-lead demo on X did exactly this.)
-- Search terms & negatives (paid search): buyer / researcher / job seeker / competitor / junk -> auto-negative, queue or drop by confidence.
-- Ad creative tagging: Matthew Berman ran Jev on 724 live ads from 37 brands in 40 s (~9 cents) - hook, format, offer, CTA, awareness stage, landing-page mismatch.
-- SEO internal links: the 586-page Distribb demo from video 2.
-- AI citation / GEO checks: "Is our brand recommended in this AI answer?" (Noul).
-- Review & survey themes: classify every response instead of sampling 200.
-- Content QA gate: 20 Nouls per draft; only passing drafts reach an editor.
-- Model routing: frontier vs small vs no model.
-Cost at list price is cents per job -> jobs that ran monthly on a frontier LLM can run nightly.
-
-DECIDE-THEN-ACT LOOP (Ryze): collect with code -> shortlist to 10-15 candidates -> one bounded question per row -> threshold (high confidence auto, middle band to approval queue, low dropped) -> LLM writes only where text is needed -> verify the LLM output with Jev before it ships.
-
-VIDEO 2 (Pursuing AI): AI that watches, decides and acts. Driving simulator (real-time control), trolley problem 100 trials (99% pull, consistent), designer visual exploration (hundreds of tiny decisions what to show), voice + gesture control of a drawing app, live slop detector on X, SEO 586 pages, Laya (local, M3 Max) playing Snake at ~60 decisions/s with 10-18 ms latency and ~1 GB memory.
-
-LIMITS: no explanation; bounded answers only; vendor-reported benchmarks measure agreement with frontier models (Jev 67.8% vs Claude Opus 5 73.1%, GPT-5.6 Sol 74.1% on TypeSafe's 4-workflow benchmark); "cannot hallucinate" means it cannot break the schema - it can still pick the wrong option. Label 500 rows of your own data before trusting a threshold. Waitlist access, price may move.
-""")
-
-
-def card(slide, x, y, w, h, color, title, items, url, url_label):
-    box(slide, x, y, w, h, fill=PANEL)
-    box(slide, x, y, w, 0.07, fill=color, shape=MSO_SHAPE.RECTANGLE)
-    text(slide, x + 0.18, y + 0.16, w - 0.3, 0.4, [title], size=14.5, bold=True, color=color)
-    text(slide, x + 0.18, y + 0.6, w - 0.3, h - 1.0,
-         [[("•  ", {"color": color}), (item, {})] for item in items], size=10.5, color=TEXT, space_after=5)
-    link(slide, x + 0.18, y + h - 0.4, w - 0.3, url_label, url, size=10, color=color)
+    flow(s, 0.5, 5.45, 3.08, 0.85, [("Collect", "rows via code", PANEL_2), ("Ask Jev", "Choice · Score · Noul", CHOICE),
+                                   ("Threshold", "auto · review · drop", SCORE), ("LLM writes", "only what passed", PANEL_2)])
+    text(s, 0.5, 6.6, 12.3, 0.4, [[("Limits: ", {"bold": True, "color": RED}),
+                                   ("no explanations · closed answer sets · triage-grade accuracy → keep a human "
+                                    "for the middle band", {})]], size=12.5, color=MUTED)
+    notes(s, NOTES["marketing"])
 
 
 def slide_access(prs):
     s = prs.slides.add_slide(prs.slide_layouts[6])
     set_bg(s)
-    header(s, f"GETTING ACCESS  ·  4 / {SLIDES}", "Jev is not publicly available yet - not even in Microsoft Foundry",
-           "Early access since 15 Sep 2026, sign-up required. Three ways to work with a System One model today:")
-
+    header(s, f"GETTING ACCESS  ·  4 / {SLIDES}", "Jev isn't public yet - not even in Microsoft Foundry",
+           "Early access since 15 Sep 2026, sign-up required. Three ways in:")
     cards = [
-        (NOUL, "①  TypeSafe API  (sign-up)", [
-            "Request early access at typesafe.ai, sign in at console.typesafe.ai, create an API key (free credit).",
-            "POST api.typesafe.ai/v1/systemone, model “jev-latest”; SDKs and langchain-typesafe.",
-            "$0.042 per 1M input tokens, output free · 250k tokens/s, 1,200 requests/min.",
-            "Our samples: set JEV_BASE_URL + JEV_API_KEY.",
-        ], TYPESAFE_DOCS, "docs.typesafe.ai"),
-        (SCORE, "②  Microsoft Foundry agent", [
-            "Not in the Foundry model catalog - you bring your own TypeSafe key.",
-            "Add an OpenAPI tool “evaluate_with_jev” (POST /v1/systemone) with a “Bearer <key>” connection.",
-            "Agent instructions: always call Jev, use its values, never classify on its own.",
-            "“The room had no water and a towel was dirty” → billing 0.02 · tone frustrated (.74) · "
-            "urgency 1.81 → handle today.",
-        ], FOUNDRY_ARTICLE, "Microsoft Tech Community article"),
-        (GREEN, "③  Open-source Laya  (no sign-up)", [
-            "Apache-2.0, 421M params, runs on a laptop CPU (~0.3 s per question; ~33 ms on a T4 GPU).",
-            "Same state + questions → typed answers; laya-serve exposes /v1/systemone.",
-            "Zero-shot quality is lower than Jev: test wording, fine-tune for production.",
-            "Powers all our samples and UI demos.",
-        ], LAYA, "huggingface.co/convaiinnovations/laya"),
+        (NOUL, "①  TypeSafe API", ["Sign up for early access", "$0.042 per 1M input tokens"],
+         TYPESAFE_DOCS, "docs.typesafe.ai"),
+        (SCORE, "②  Microsoft Foundry", ["Not in the model catalog", "Call it via an agent OpenAPI tool"],
+         FOUNDRY_ARTICLE, "Microsoft Tech Community article"),
+        (GREEN, "③  Open-source Laya", ["No sign-up, runs on a laptop", "Powers all our demos"],
+         LAYA, "huggingface.co/convaiinnovations/laya"),
     ]
     for i, (color, title, items, url, label) in enumerate(cards):
-        card(s, 0.5 + i * 4.19, 1.75, 3.95, 3.1, color, title, items, url, label)
+        card(s, 0.5 + i * 4.19, 1.85, 3.95, 2.45, color, title, items, url, label)
 
-    # Foundry pattern (from the Tech Community article)
-    box(s, 0.5, 5.05, 7.45, 2.05, fill=PANEL)
-    text(s, 0.68, 5.13, 7.2, 0.3, [[("Pattern from the Foundry article: ", {"bold": True}),
-                                    ("Jev as a judgement layer", {"color": MUTED})]], size=12)
-    steps = [("User / app", PANEL_2), ("Foundry agent\nor model", PANEL_2), ("Jev judgement", SCORE),
-             ("Business rules\n(code)", PANEL_2), ("Action /\nresponse", PANEL_2)]
-    for i, (label, color) in enumerate(steps):
-        chev = box(s, 0.68 + i * 1.42, 5.55, 1.55, 0.7, fill=color,
-                   shape=MSO_SHAPE.PENTAGON if i == 0 else MSO_SHAPE.CHEVRON)
-        text(s, 0, 0, 0, 0, [label], size=9.5, bold=color == SCORE, color=BG if color == SCORE else TEXT,
-             align=PP_ALIGN.CENTER, anchor=MSO_ANCHOR.MIDDLE, shape=chev)
-    text(s, 0.68, 6.35, 7.15, 0.75, [[
-        ("Explainability for Model-as-a-Service: ", {"bold": True, "color": TEXT}),
-        ("not SHAP-style feature attribution, but a measurable layer that checks an opaque hosted LLM's "
-         "inputs, outputs and proposed actions against explicit criteria - with a confidence to gate on.", {})]],
-         size=10.5, color=MUTED)
-
-    # how to run
-    box(s, 8.15, 5.05, 4.68, 2.05, fill=PANEL, line=GREEN)
-    link(s, 8.3, 5.12, 4.4, "github.com/stvonolf/jev-samples", REPO, size=11.5, color=GREEN, prefix="Run our samples:  ")
-    code = [
-        "git clone https://github.com/stvonolf/jev-samples",
-        "cd jev-samples",
-        "python -m venv .venv",
-        r".venv\Scripts\pip install -r samples\requirements.txt",
-        "cd samples",
-        r"..\.venv\Scripts\python 01_lead_scoring.py",
-        r"..\.venv\Scripts\python 07_ui_demos.py   # UI demos",
-    ]
-    text(s, 8.3, 5.5, 4.45, 1.6, code, size=9, font=MONO, color=TEXT, spacing=1.1)
-
-    notes(s, """
-AVAILABILITY: Jev (TypeSafe AI) has been in early access since 15 Sep 2026. You apply for the preview, then create an API key under "API keys" (free starter credit is typical). It is NOT in the Microsoft Foundry model catalog - there is no one-click deployment.
-
-MICROSOFT FOUNDRY (Microsoft Tech Community, "Using Jev with Agents in Microsoft Foundry for Model Evaluation", 30 Sep 2026):
-- Create a Foundry agent, add an OpenAPI tool with an OpenAPI 3.0 schema for POST https://api.typesafe.ai/v1/systemone (operationId evaluate_with_jev; Noul / Choice / Score question schemas) and a new connection holding the key as "Bearer <key>".
-- Agent instructions: for every support message MUST call evaluate_with_jev, use exactly 'instructions' and 'criteria' properties, model "jev-latest", pass the original message as state, do not classify yourself, show the Jev output.
-- Example from the article: "The room had no water in and one of the towels was dirty" -> billing noul 0.02, tone choice frustrated (0.74, confidence 0.6), urgency score 1.81 (handle today 0.85). The application then routes / escalates / requires human review deterministically.
-- Pattern: User/Application -> Foundry model or agent -> Jev judgement -> deterministic logic -> action/response.
-- Why Jev: consistent evaluation against explicit criteria, structured outputs, classification/routing, guardrails before tool calls, model routing; every decision has a probability for thresholds.
-- Explainability: SHAP-style attribution is hard when the model is only reachable through a hosted API. Jev does not replace SHAP but adds a separate, measurable judgement layer around opaque MaaS models.
-- Pricing (Sept 2026): jev-1.13.0 $0.042 per 1M input tokens, output free; limits 250,000 tokens/s and 1,200 requests/min (subject to change). Typical latency ~70-500 ms.
-
-OPEN SOURCE: Laya (huggingface.co/convaiinnovations/laya) - Apache-2.0, Jev-compatible request/response shape, runs locally; laya-serve exposes POST /v1/systemone so Jev clients only change the base URL. All our samples run on it.
-
-RUN THE SAMPLES: git clone https://github.com/stvonolf/jev-samples; python -m venv .venv; .venv\\Scripts\\python -m pip install -r samples\\requirements.txt; cd samples; ..\\.venv\\Scripts\\python 01_lead_scoring.py (01-06), ..\\.venv\\Scripts\\python 07_ui_demos.py for the browser demos (http://localhost:8765). First run downloads ~0.8 GB of model weights.
-""")
-
-
-def slide_demos(prs, trolley_png, creative_png, score_png):
-    s = prs.slides.add_slide(prs.slide_layouts[6])
-    set_bg(s)
-    header(s, f"LIVE DEMOS  ·  6 / {SLIDES}", "Three live UI demos: Choice, Noul and Score")
-    link(s, 0.5, 1.22, 12.3, r"python samples\07_ui_demos.py  →  http://localhost:8765", REPO, size=13,
-         color=SCORE, prefix="Run:  ")
-
-    panels = [
-        (trolley_png, "Trolley problem ×100", "Choice", CHOICE, [
-            "Rebuilt from the video. 100 trials, randomised wording: pulled the lever 100 / 100 (P 0.75–0.98).",
-            "Sanity check with 1 on main and 5 on side: it still pulls (0 / 13 chose fewer deaths).",
-            "System-1 models react to the story pattern; they don't count.",
-        ]),
-        (creative_png, "Creative emoji pile", "Noul × 235", NOUL, [
-            "Rebuilt from the video. Each emoji is one Noul: “Is this related to: <request>?”; outliers fly up live.",
-            "Good ranking (winter → scarf, coat, gloves, socks); probability levels differ per prompt → relative threshold.",
-            "“starting a band” also picks the bandage.",
-        ]),
-        (score_png, "How hot is this message?", "Score × 4", SCORE, [
-            "Frustration, urgency, churn risk and sentiment, re-scored while you type.",
-            "Answers land between levels: frustration 0.96 → 1.42 → 1.84 → 2.11 → 2.44 as the message escalates.",
-            "Code: priority 0.81 → escalate to retention; a thank-you note → testimonial for marketing.",
-        ]),
-    ]
-    w = 3.95
-    heights = []
-    for png, *_ in panels:
-        with Image.open(png) as im:
-            heights.append(w * im.height / im.width)
-    y = 1.7 + max(heights) + 0.15
-    for i, (png, title, prim, color, lines) in enumerate(panels):
-        x = 0.5 + i * (w + 0.24)
-        picture(s, png, x, 1.7, w)
-        text(s, x, y, w, 0.35, [[(title, {"bold": True}), (f"   {prim}", {"color": color, "bold": True})]], size=13)
-        text(s, x, y + 0.38, w, 2.3, [[("•  ", {"color": color}), (line, {})] for line in lines],
-             size=10.5, color=MUTED, space_after=4)
-
-    notes(s, """
-SAMPLE 07 (samples/07_ui_demos.py): a stdlib-only web server on top of jev_client.DecisionClient - so it runs on local Laya by default and on TypeSafe Jev when JEV_BASE_URL / JEV_API_KEY are set. Open http://localhost:8765. One demo per primitive.
-
-TROLLEY (/trolley, Choice), modelled on the "The trolley problem, 100 times" demo from video 2 (X post by @FinanceYF5): one Choice per trial ("pull_the_lever" vs "leave_it_alone", criteria spell out who dies). Each trial uses freshly randomised wording (vehicle, people, sentence template), so the 100 decisions are not identical calls. First 5 trials at 1x, then 10x, like the original. Classic mode reproduces the video (100/100 pull). Sanity-check mode swaps the counts (1 on main, 5 on side) - Laya still pulls the lever (0 of 13 trials chose fewer deaths in our run), and a random-counts mode shows the same. Lesson: fast decision models pattern-match; put arithmetic and hard rules in code.
-
-CREATIVE (/creative, Noul), modelled on the designer demo (@heystefan_): type a request, every emoji in a pile of ~235 gets a Noul. Emoji that stand out for the request animate up under the prompt as decisions stream in, 8 per request. Because P(related) levels vary by prompt (wear ~0.9 max, lose weight ~0.3 max), the UI selects relative outliers (mean + 2.5 sd, at most 12). Speed on our laptop CPU: ~0.15-0.3 s per emoji decision, so a brand-new prompt takes ~40-75 s; the suggested prompts are pre-computed and cached at server start so they replay instantly. On a GPU or the Jev API this is real time.
-
-SCORE (/score): "How hot is this message?" - four Score questions about one customer message (frustration: calm/slightly annoyed/frustrated/furious; urgency: no time pressure ... emergency; churn risk: very unlikely ... about to cancel; sentiment: negative/neutral/positive), re-evaluated 0.7 s after you stop typing (~1.3-1.5 s per evaluation on the laptop CPU). Each gauge shades the levels by probability and puts a needle at the probability-weighted score, so you can see it land between levels. "Play escalation" types an invoice complaint sentence by sentence: frustration 0.96 -> 1.42 -> 1.84 -> 2.11 -> 2.44, churn jumps to 2.84 at "we will cancel". Priority = 0.40 frustration + 0.35 urgency + 0.25 churn (normalised) is computed in code and mapped to a route (normal queue / reply today / priority / escalate to retention; happy customers -> testimonial for marketing). We first tried scoring short email subject lines - only urgency separated well, so Score works best on richer text.
-
-WHAT WE TRIED (creative): grouped Choice (10 emoji + "none" per question) was faster but less precise; mean-pooled encoder embeddings as a shortlist were no better than random; the emoji + name state with "Is this related to: X?" had the best ranking (AUC ~0.9 on labelled sets, except physics questions like magnets).
-""")
+    box(s, 0.5, 4.6, 12.33, 1.95, fill=PANEL, line=GREEN)
+    link(s, 0.72, 4.72, 11.9, "github.com/stvonolf/jev-samples", REPO, size=15, color=GREEN, prefix="Try it:  ")
+    text(s, 0.72, 5.25, 11.9, 1.6, [
+        "git clone https://github.com/stvonolf/jev-samples; cd jev-samples",
+        r"python -m venv .venv; .venv\Scripts\pip install -r samples\requirements.txt",
+        r"cd samples; ..\.venv\Scripts\python 07_ui_demos.py      # → http://localhost:8765",
+    ], size=14, font=MONO, color=TEXT, spacing=1.25)
+    notes(s, NOTES["access"])
 
 
 def slide_4(prs, terminal_png, terminal_size):
     s = prs.slides.add_slide(prs.slide_layouts[6])
     set_bg(s)
-    header(s, f"HANDS-ON  ·  5 / {SLIDES}", "We built it: 7 samples running locally on Laya")
-    text(s, 0.5, 1.22, 7.8, 0.4, ["Laya: open-source (Apache-2.0), Jev-compatible, 421M params. Runs on a laptop CPU."],
-         size=14, color=MUTED)
-    link(s, 8.45, 1.25, 4.4, "github.com/stvonolf/jev-samples", REPO, size=13, prefix="Code:  ")
+    header(s, f"HANDS-ON  ·  5 / {SLIDES}", "We built it: 6 samples + 3 UI demos")
+    link(s, 0.5, 1.25, 7.0, "github.com/stvonolf/jev-samples", REPO, size=14, prefix="Code:  ")
+    bullets(s, 0.5, 1.9, 7.0, 2.4, [
+        ("6 marketing samples: ", "leads, replies, SEO, social, commands, agents"),
+        ("3 UI demos, ", "one per primitive (next slide)"),
+        ("Local Laya or the Jev API: ", "one env variable"),
+    ], size=16, gap=12)
+    text(s, 0.5, 4.45, 7.0, 0.4, ["What we learned"], size=16, bold=True, color=GREEN)
+    bullets(s, 0.5, 4.9, 7.0, 1.7, [
+        ("Ask small, atomic questions", ""),
+        ("Keep numbers and business rules in code", ""),
+        ("Test wording on labelled examples, gate on confidence", ""),
+    ], size=15, gap=8, marker_color=GREEN)
 
-    rows = [
-        ["#", "Sample", "Primitives", "What happened on our laptop"],
-        ["01", "Lead scoring", "Choice + Score + Noul", "VP with budget → 86/100, enterprise AE; student & agency dropped; possible competitor → human check"],
-        ["02", "Reply triage (EN/DE/CZ)", "Choice + Noul", "10/10 correct labels; 7 automated, 1 review, 2 escalated; opt-outs always suppressed"],
-        ["03", "SEO internal linking", "Noul + Choice", "36 page pairs → 18 links + anchor texts; party page gets none"],
-        ["04", "Social feed monitor", "Noul + Score + Choice", "3/3 slop posts hidden; complaint → support, cancellation → retention"],
-        ["05", "Command bar", "Choice", "“cut meta prospecting in half” → change_budget(…, 50%); vague → “did you mean…?”"],
-        ["06", "Agent harness", "Choice + Noul", "48% LLM cost saved by routing; 6/6 tool calls gated; fake claims caught"],
-        ["07", "UI demos (browser)", "Choice + Score + Noul", "Trolley ×100, creative emoji pile, live Score gauges for customer messages → slide 6"],
-    ]
-    table(s, 0.5, 1.75, 7.7, [0.42, 1.85, 1.7, 3.73], rows, row_h=0.44, size=10.5,
-          first_col_color=MUTED, col_colors={1: lambda v: TEXT, 2: lambda v: primitive_color(v)})
-
-    w = 4.38
+    w = 4.95
     h = w * terminal_size[1] / terminal_size[0]
-    picture(s, terminal_png, 8.45, 1.8, w)
-    caption(s, 8.45, 1.8 + h + 0.03, w, [("Real output of samples/06_agent_harness.py (excerpt)", {})])
+    picture(s, terminal_png, 7.9, 1.9, w)
+    caption(s, 7.9, 1.9 + h + 0.04, w, [("Real output of samples/06_agent_harness.py (excerpt)", {})])
+    text(s, 0.5, 6.75, 12.3, 0.4, [[("Next: ", {"bold": True, "color": SCORE}),
+                                    ("pick one pilot · label 300–500 real examples · compare Laya vs the Jev API", {})]],
+         size=14, color=TEXT)
+    notes(s, NOTES["handson"])
 
-    box(s, 0.5, 5.45, 7.7, 1.65, fill=PANEL)
-    text(s, 0.68, 5.52, 7.4, 0.3, ["What we learned (zero-shot, no fine-tuning)"], size=12, bold=True, color=GREEN)
-    bullets(s, 0.68, 5.85, 7.45, 1.25, [
-        ("Atomic questions win: ", "one persona Choice beat four disqualifier Nouls."),
-        ("Data and business rules stay in code; ", "the model only judges language."),
-        ("Wording matters: ", "test 3–5 phrasings on a small labelled set before you trust a threshold."),
-        ("Gate on confidence, fail safe: ", "uncertain → human or “did you mean…?”. "
-                                           "CPU ≈ 0.3 s/question, GPU ≈ 33 ms."),
-    ], size=10.5, gap=1.5, marker_color=GREEN)
 
-    ny = max(1.8 + h + 0.4, 5.45)
-    box(s, 8.45, ny, 4.38, 7.1 - ny, fill=PANEL, line=SCORE)
-    text(s, 8.62, ny + 0.07, 4.1, 0.3, ["Next steps"], size=12, bold=True, color=SCORE)
-    text(s, 8.62, ny + 0.4, 4.1, 7.1 - ny - 0.45, [
-        "1. Pick one pilot: reply triage or lead scoring",
-        "2. Label 300–500 real examples, set thresholds",
-        "3. Compare Laya (fine-tuned) vs Jev API on it",
-        "4. Ship behind a confidence gate + human review",
-    ], size=10.5, color=TEXT, space_after=2)
-
-    notes(s, """
-REPO: https://github.com/stvonolf/jev-samples - samples/ has seven runnable Python samples + jev_client.py (local Laya backend or any Jev-compatible HTTP endpoint via JEV_BASE_URL / JEV_API_KEY). Run: git clone https://github.com/stvonolf/jev-samples; cd jev-samples; python -m venv .venv; .venv\\Scripts\\python -m pip install -r samples\\requirements.txt; cd samples; ..\\.venv\\Scripts\\python 01_lead_scoring.py (01-06 are console samples); ..\\.venv\\Scripts\\python 07_ui_demos.py starts the browser demos on http://localhost:8765.
-
-LAYA (huggingface.co/convaiinnovations/laya): ModernBERT-large backbone (395M) + a decision head trained from scratch, 421M total; multilingual checkpoint on mmBERT-base for 100+ languages; trained with RLCD-style proper scoring rules. laya-serve exposes the same POST /v1/systemone request/response shape as TypeSafe Jev. Author-reported vs Jev (third-party numbers, different setups): 7.8x faster on a T4 GPU (32.8 ms vs 236-276 ms p50), better calibration after temperature fitting, but Jev is better with >20 options (Banking77: 0.87 vs 0.43). The base checkpoint scores 0.36 on the typed-decisions benchmark; the fine-tuned typed-decisions checkpoint 0.77 - fine-tuning matters.
-
-OUR MEASUREMENTS (Intel Core Ultra 7 268V, CPU only): ~250-350 ms for one short question, ~1-2 s for 4-5 questions about one item, model load ~10 s from cache. Fine for batch/demo; use a GPU or the Jev API for real-time.
-
-LESSONS: we tested 3-5 phrasings per question on small labelled sets. Examples: "Do both pages cover the same marketing topic?" (AUC 1.0) beat "Are the pages closely related?"; short option labels beat long descriptions for the command bar; plain-text tool-call descriptions + a "kind of action" Choice beat risk Nouls on JSON. Giving the model fewer CRM fields improved persona detection.
-
-NEXT STEPS: one pilot use case, label data, measure Laya vs Jev, ship behind confidence gating with human review for the middle band.
-""")
+def slide_demos(prs, demos):
+    s = prs.slides.add_slide(prs.slide_layouts[6])
+    set_bg(s)
+    header(s, f"LIVE DEMOS  ·  6 / {SLIDES}", "Live demos: one per primitive")
+    link(s, 0.5, 1.22, 12.3, r"python samples\07_ui_demos.py  →  http://localhost:8765", REPO, size=13,
+         color=SCORE, prefix="Run:  ")
+    w = 3.95
+    h = w * 800 / 1280
+    for i, (clip, poster, title, prim, color, line) in enumerate(demos):
+        x = 0.5 + i * (w + 0.24)
+        if clip.exists():
+            movie = s.shapes.add_movie(str(clip), Inches(x), Inches(1.8), Inches(w), Inches(h),
+                                       poster_frame_image=str(poster), mime_type="video/mp4")
+            movie.line.color.rgb = LINE
+        else:
+            picture(s, poster, x, 1.8, w)
+        y = 1.8 + h + 0.2
+        text(s, x, y, w, 0.4, [[(title, {"bold": True}), (f"   {prim}", {"color": color, "bold": True})]], size=15)
+        text(s, x, y + 0.5, w, 1.4, [line], size=13, color=MUTED)
+    text(s, 0.5, 6.85, 12.3, 0.3, ["Click a video to play it · recorded from samples/07_ui_demos.py on a laptop CPU"],
+         size=10.5, color=MUTED)
+    notes(s, NOTES["demos"])
 
 
 def main():
     terminal_png = ASSETS / "terminal_06_agent_harness.png"
     size = render_terminal(terminal_png)
     demos_png = crop_banner(ASSETS / "yt_I34qxJjyms0.jpg", ASSETS / "yt_I34qxJjyms0_demos.jpg", top_px=144)
+    demos = [
+        (ASSETS / "demo_trolley.mp4", ASSETS / "demo_trolley.png", "Trolley ×100", "Choice", CHOICE,
+         "100 / 100 pulls, like the video - but it also pulls when 5 are on the side track."),
+        (ASSETS / "demo_creative.mp4", ASSETS / "demo_creative.png", "Emoji pile", "Noul", NOUL,
+         "~235 yes/no decisions per prompt; matches fly up as they stream in."),
+        (ASSETS / "demo_score.mp4", ASSETS / "demo_score.png", "Message heat", "Score", SCORE,
+         "Gauges move between levels as the complaint escalates → retention."),
+    ]
 
     prs = Presentation()
     prs.slide_width = Inches(13.333)
@@ -705,7 +482,7 @@ def main():
     slide_3(prs, demos_png)
     slide_access(prs)
     slide_4(prs, terminal_png, size)
-    slide_demos(prs, ASSETS / "ui_trolley.png", ASSETS / "ui_creative.png", ASSETS / "ui_score.png")
+    slide_demos(prs, demos)
     prs.core_properties.title = "Jev - AI that decides, not chats"
     prs.core_properties.subject = "Team briefing: Jev, System One models and marketing software"
     prs.save(OUT)

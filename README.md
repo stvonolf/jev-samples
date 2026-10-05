@@ -58,5 +58,6 @@ lessons learned and how to switch to the TypeSafe Jev API.
 
 Slide images: thumbnails of the referenced YouTube videos (credited and linked on the slides;
 the title banner of the second one is cropped off), a screenshot rendered from a real run of
-`samples/06_agent_harness.py`, and screenshots of the three UI demos. Rebuild the deck with
+`samples/06_agent_harness.py`, and short MP4 clips recorded from the three UI demos (embedded on
+slide 6). Speaker notes carry the detail; they live in `presentation/speaker_notes.py`. Rebuild the deck with
 `.venv\Scripts\python.exe presentation\build_presentation.py`.
