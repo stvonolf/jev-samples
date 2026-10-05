@@ -345,12 +345,13 @@ def slide_2(prs):
 
     flow(s, 0.5, 4.3, 3.08, 0.9, [("State", "text or JSON", PANEL_2), ("Questions", "Choice · Score · Noul", PANEL_2),
                                   ("Answers", "+ confidence", SCORE), ("Your code", "act · review · escalate", PANEL_2)])
-    bullets(s, 0.5, 5.55, 12.3, 1.4, [
+    bullets(s, 0.5, 5.4, 12.3, 1.0, [
         ("All questions answered together ", "in ~0.1 s · text only · calibrated over many decisions, not each one"),
         ("Where it fits: ", "any repetitive judgement in your product - classify, prioritise, check; LLMs keep the writing"),
     ], size=16, gap=10)
-    caption(s, 0.5, 6.75, 12.3, [("▶  More: LangChain “Building a Harness with Jev” (routing, guardrails, judge)", {})],
-            link=VIDEO_3)
+    text(s, 0.95, 6.22, 11.9, 0.4, [[("–  In AI agents (harness engineering): ", {"bold": True, "color": TEXT}),
+                                     ("model routing · tool-call guardrails · LLM-as-judge", {})]], size=14, color=MUTED)
+    caption(s, 0.95, 6.66, 11.9, [("▶  LangChain: “Building a Harness with Jev”", {})], link=VIDEO_3)
     notes(s, NOTES["how"])
 
 
