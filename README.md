@@ -51,6 +51,7 @@ lessons learned and how to switch to the TypeSafe Jev API.
 - [Jev Is WAY More Powerful Than We Thought](https://www.youtube.com/watch?v=I34qxJjyms0) - Pursuing AI
 - [Building a Harness with Jev](https://www.youtube.com/watch?v=VE5dsWll06M) - LangChain ([blog post](https://www.langchain.com/blog/building-a-harness-with-jev))
 - [Using Jev with Agents in Microsoft Foundry for Model Evaluation](https://techcommunity.microsoft.com/blog/azuredevcommunityblog/using-jev-with-agents-in-microsoft-foundry-for-model-evaluation/4559851) - Microsoft Tech Community
+- [TypeSafe AI](https://typesafe.ai/) - homepage (positioning, speed/cost claims) and [System One](https://docs.typesafe.ai/concepts/system-one) concept page
 - [TypeSafe docs](https://docs.typesafe.ai) - API reference, primitives, patterns, use-case map
 - [Jev for Marketing: 8 Use Cases and the Limits](https://www.get-ryze.ai/blog/jev-for-marketing) - Ryze AI
 - [Laya](https://huggingface.co/convaiinnovations/laya) / [GitHub](https://github.com/NandhaKishorM/laya) - open-source Jev-compatible model (Apache-2.0)

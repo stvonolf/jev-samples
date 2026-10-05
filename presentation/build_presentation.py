@@ -282,23 +282,25 @@ def slide_1(prs):
     text(s, 0.5, 0.32, 7, 0.3, [f"JEV · TEAM BRIEFING  ·  1 / {SLIDES}"], size=11, color=SCORE, bold=True)
     text(s, 0.5, 0.62, 7.6, 1.3, [[("Jev: AI that ", {}), ("decides", {"color": CHOICE}),
                                   (",\nnot chats", {})]], size=36, bold=True, spacing=0.95)
-    text(s, 0.5, 2.0, 7.4, 0.6, ["TypeSafe AI's first “System One” model: fast, typed, calibrated "
-                                 "decisions that software can use directly."], size=14, color=MUTED)
-    bullets(s, 0.5, 2.75, 7.35, 4.4, [
-        ("What it is.  ", "Input = a state (text or JSON) + typed questions. Output = typed answers "
-                          "with calibrated probabilities. It never generates text, so there is nothing "
-                          "to parse and no broken schema."),
-        ("Why it exists.  ", "LLMs were optimised for chat (RLHF) and coding agents (RLVR). Workflow "
-                             "automation needs thousands of quick decisions under uncertainty: the "
-                             "neglected use case."),
-        ("How it is trained.  ", "RLCD = reinforcement learning for calibrated decisions. Rewards come "
-                                 "from proper scoring rules, so honest probabilities score best."),
-        ("Speed and cost.  ", "All questions in one parallel pass: 70–500 ms, 20–200× faster and "
-                              "40–400× cheaper than LLMs on classification-style tasks. "
-                              "$0.042 per 1M input tokens, output is free."),
+    text(s, 0.5, 2.0, 7.4, 0.6, [[("TypeSafe AI: ", {"color": MUTED}),
+                                  ("“We took the opposite research direction - not chat.” ", {"color": TEXT, "italic": True}),
+                                  ("Its first System One model makes typed, calibrated decisions for software.", {"color": MUTED})]],
+         size=14)
+    bullets(s, 0.5, 2.75, 7.35, 4.1, [
+        ("What it is.  ", "Input = a state (text, JSON or arrays of text; no images or audio yet) + typed "
+                          "questions. Output = typed answers with calibrated probabilities. No text "
+                          "generation: nothing to parse, no broken schema."),
+        ("Why it exists.  ", "RLHF made LLMs great at chat, but brings mode dropping, overconfidence and "
+                             "unreliability - so they need a human in the loop. Automation needs thousands "
+                             "of reliable decisions."),
+        ("How it is built.  ", "New architecture, new sampler and a new training algorithm: RLCD "
+                               "(reinforcement learning for calibrated decisions) - honest probabilities score best."),
+        ("Speed and cost.  ", "All questions in one parallel pass. TypeSafe: 193.6× faster, 444.6× cheaper "
+                              "on System One workflows (0.11 s / $0.00008 vs 8.6 s / $0.014); "
+                              "$42 per billion input tokens, output free."),
         ("Not an LLM replacement.  ", "It cannot write, explain or plan. Jev is System 1 (fast "
                                       "intuition); LLMs stay System 2 (slow reasoning). Use both."),
-    ], size=14, gap=11)
+    ], size=13, gap=8)
 
     picture(s, ASSETS / "yt_vj7hysh0mOI.jpg", 8.3, 0.45, 4.55, link=VIDEO_1)
     caption(s, 8.3, 3.04, 4.6, [("Video: ", {}), ("“Jev explained in 7min..” – Caleb Writes Code", {})],
@@ -327,9 +329,13 @@ def slide_1(prs):
     notes(s, """
 WHAT: Jev (TypeSafe AI, early access since Sept 2026) is the first "System One" model. You send a state and typed questions (choice / score / noul) to POST /v1/systemone and get typed answers with probabilities back. No text generation.
 
+TYPESAFE'S OWN POSITIONING (typesafe.ai): "an AI lab building machine-native intelligence infrastructure for automation". "We took the opposite research direction - not chat": RLHF optimises for human preference and produces superhuman instruction followers, but also mode dropping, overconfidence and a lack of reliability, so LLMs need humans in the loop. System One models are built to be used natively by machines, with a new architecture, a new sampler and a new training algorithm (RLCD). Taglines: "Decisions, not strings", "calibrated confidence", "more like code: reliable, fast, type-safe". Headline claim: 193.6x faster and 444.6x cheaper on workflows for System One tasks (their demo: $0.000081 in 0.114 s vs an LLM at $0.013880 in 8.566 s); $42 per billion input tokens (= $0.042 per million), "238x lower input price than Claude Fable 5.1". They also claim "zero hallucinations" - read that as "always a valid typed answer", not "always right". All vendor-reported.
+
+SYSTEM ONE (docs.typesafe.ai/concepts/system-one): text input only (strings, JSON objects, arrays of text) - images, audio and video are not supported yet. Calibration is measured across groups of predictions; it does not guarantee that a single answer is correct. No replies, no code, no explanations of reasoning.
+
 WHY (Caleb Writes Code, "Jev explained in 7min"): the AI stack's application layer pushed models toward chat (RLHF) and coding agents (RLVR). Workflow automation never crossed the cost/speed threshold, even with very capable models. TypeSafe argues that forcing chat/agent-optimised models into automation is the wrong approach and trains for calibrated decisions instead (RLCD). Most community demos show off speed (sorting email, RAG, games, model routing) rather than depth - LLMs can do these functionally, but not at 70-500 ms, because they generate tokens one after another.
 
-HOW FAST/CHEAP: vendor-reported 40-200x faster; LangChain quotes 20-200x faster and 40-400x cheaper on classification-style tasks. Price $0.042 per 1M input tokens, output free (~$0.0004 per decision).
+HOW FAST/CHEAP: video 1 quotes 40-200x faster at 70-500 ms end-to-end; LangChain quotes 20-200x faster and 40-400x cheaper on classification-style tasks; TypeSafe's homepage says 193.6x faster / 444.6x cheaper on System One workflows. Price $0.042 per 1M input tokens, output free (~$0.0004 per decision).
 
 NAME: System 1 / System 2 from Kahneman, "Thinking, Fast and Slow".
 
@@ -381,6 +387,9 @@ def slide_2(prs):
         [("→ team = billing (.84) · mood = 1.04 · urgent = 0.999", {"color": GREEN})],
     ]
     text(s, 0.68, 4.75, 5.9, 2.3, code, size=11.5, font=MONO, color=TEXT, spacing=1.1)
+    text(s, 0.68, 6.55, 5.9, 0.45, [[("Good to know: ", {"bold": True, "color": TEXT}),
+                                     ("text input only (strings, JSON, arrays) · calibration holds across many "
+                                      "predictions, not for every single answer", {})]], size=10, color=MUTED)
 
     # harness use cases (LangChain video)
     box(s, 6.85, 4.3, 5.98, 2.75, fill=PANEL)
@@ -407,6 +416,8 @@ PRIMITIVES (all three videos + docs.typesafe.ai/api):
 Caleb's framing: "It almost feels like we're back to logic gates and registers" - you build abstractions on top. On the Pareto frontier Jev competes with Flash/Nano-class models, but only on workflow-specific tasks.
 
 DOCS PATTERNS: confidence-gated routing (the answer tells you WHAT, confidence tells you WHETHER to act), composite scoring (atomic scores, weights in code), speculative fan-out (ask everything in one call, code decides what is relevant), intent routing.
+
+SYSTEM ONE WORKFLOW (docs.typesafe.ai/concepts/system-one) - refund request: 1) build a state with the customer's message, the relevant transactions and the refund policy; 2) ask independent questions together (refund requested? evidence of a duplicate charge? does the policy support a refund?); 3) combine the answers with deterministic checks in code and route the case for action or review. Confidence decides when to act and when to escalate to a person or a reasoning model. Inputs are text only (strings, JSON objects, arrays of text); calibration holds across groups of predictions, not for every single answer.
 
 LANGCHAIN ("Building a Harness with Jev"): langchain-typesafe exposes TypeSafeClassifier plus experimental middleware: ModelRouterMiddleware (fast vs powerful model per request) and AutoModeMiddleware (tool-risk gating). Jev-as-a-judge for LangSmith online evals: rubric criteria scored by Jev - reported as cheaper, faster and more consistent than LLM judges. Sample 06 in our repo implements all three ideas.
 """)
@@ -459,7 +470,8 @@ def slide_3(prs, demos_png):
              color=BG if dark else TEXT, align=PP_ALIGN.CENTER, anchor=MSO_ANCHOR.MIDDLE, shape=chev)
     text(s, 0.5, 6.72, 12.4, 0.5, [[
         ("Limits: ", {"bold": True, "color": RED}),
-        ("no rationale (a number, not a reason) · closed answer sets only · triage-grade accuracy "
+        ("no rationale (a number, not a reason) · closed answer sets, text input only · “zero hallucinations” "
+         "means always a valid type, not always the right answer · triage-grade accuracy "
          "(vendor benchmark ~68% vs ~73% for frontier LLMs) · early access, price may change. "
          "If the answer must be written, it belongs to an LLM.", {})]], size=11, color=MUTED)
 
@@ -500,7 +512,7 @@ def slide_access(prs):
 
     cards = [
         (NOUL, "①  TypeSafe API  (sign-up)", [
-            "Apply for the preview at typesafe.ai, then create an API key (comes with free credit).",
+            "Request early access at typesafe.ai, sign in at console.typesafe.ai, create an API key (free credit).",
             "POST api.typesafe.ai/v1/systemone, model “jev-latest”; SDKs and langchain-typesafe.",
             "$0.042 per 1M input tokens, output free · 250k tokens/s, 1,200 requests/min.",
             "Our samples: set JEV_BASE_URL + JEV_API_KEY.",
