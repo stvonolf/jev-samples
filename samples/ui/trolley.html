@@ -1,0 +1,354 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<link rel="icon" href="data:,">
+<title>The trolley problem, 100 times</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<style>
+  :root { --bg:#0b1015; --panel:#111a21; --line:#1f2c36; --text:#e8eef2; --muted:#7f909c;
+          --teal:#5eead4; --amber:#fbbf24; --red:#f87171; --rail:#5b6b78; --sleeper:#24313b; }
+  * { box-sizing: border-box; }
+  body { margin:0; background:var(--bg); color:var(--text); font:15px/1.45 "Segoe UI", system-ui, sans-serif; }
+  .wrap { max-width: 1280px; margin: 0 auto; padding: 28px 32px 40px; }
+  .kicker { font: 600 11px/1 Consolas, monospace; letter-spacing:.12em; color:var(--muted); text-transform:uppercase; }
+  .kicker a { color: var(--muted); text-decoration:none; }
+  .kicker a:hover { color: var(--teal); }
+  h1 { font-size: 30px; margin: 10px 0 22px; font-weight:600; letter-spacing:-.01em; }
+  .grid { display:grid; grid-template-columns: 1fr 300px; gap: 22px; }
+  .panel { background:var(--panel); border:1px solid var(--line); border-radius:10px; }
+  .scene { position:relative; }
+  svg { display:block; width:100%; height:auto; }
+  .caption { margin-top: 14px; }
+  .caption .big { font-weight:600; }
+  .caption .small { color:var(--muted); font-size:13px; }
+  .wording { margin-top: 10px; color:var(--muted); font-size:13px; font-style:italic; min-height: 38px; }
+  .side { padding: 0; display:flex; flex-direction:column; gap:14px; }
+  .chip { align-self:flex-end; font:600 11px Consolas, monospace; letter-spacing:.1em; padding:7px 12px;
+          border:1px solid #1d5b52; color:var(--teal); background:#0f2a27; border-radius:4px; }
+  .label { font: 600 10.5px Consolas, monospace; letter-spacing:.12em; color:var(--muted); text-transform:uppercase; }
+  .count { font-size: 46px; font-weight:600; line-height:1; margin-top:6px; }
+  .count small { font-size: 16px; color:var(--muted); font-weight:400; }
+  .bar { height:4px; background:#1b2730; border-radius:2px; margin-top:10px; overflow:hidden; }
+  .bar i { display:block; height:100%; width:0; background:var(--teal); transition: width .2s; }
+  .rows div { display:flex; justify-content:space-between; padding:6px 0; border-bottom:1px solid var(--line); font-size:14px; }
+  .choice { font-size: 20px; font-weight:700; letter-spacing:.02em; margin-top:4px; }
+  .choice.pull { color: var(--teal); } .choice.leave { color: var(--amber); }
+  .cells { display:grid; grid-template-columns: repeat(10, 1fr); gap:4px; }
+  .cells span { aspect-ratio: 1.6; background:#18232c; border-radius:2px; transition: background .2s; }
+  .cells span.pull { background: var(--teal); } .cells span.leave { background: var(--amber); }
+  .cells span.now { outline: 1px solid var(--text); }
+  .stats { color:var(--muted); font-size:12.5px; line-height:1.6; }
+  .controls { display:flex; gap:8px; flex-wrap:wrap; align-items:center; }
+  select, button { font: 600 13px "Segoe UI", sans-serif; color:var(--text); background:#16222b; border:1px solid var(--line);
+                   border-radius:6px; padding:8px 12px; cursor:pointer; }
+  button.primary { background: var(--teal); color:#06201c; border-color: var(--teal); }
+  button:disabled { opacity:.5; cursor:default; }
+  .verdict { margin-top: 6px; font-size: 13px; color: var(--text); }
+  .verdict b { color: var(--teal); }
+  .foot { margin-top: 26px; color:var(--muted); font-size:12px; }
+  .error { color: var(--red); }
+  .person.lost { opacity:.28; transition: opacity .25s; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="kicker"><a href="/">Jev demos</a> / Decision experiment 01</div>
+  <h1>The trolley problem, 100 times.</h1>
+
+  <div class="grid">
+    <div>
+      <div class="panel scene">
+        <svg id="scene" viewBox="0 0 900 360" aria-label="trolley scene">
+          <defs>
+            <g id="figure">
+              <circle cx="0" cy="-30" r="6.5"></circle>
+              <rect x="-6" y="-22" width="12" height="17" rx="4"></rect>
+              <rect x="-5" y="-6" width="4" height="9" rx="1.5"></rect>
+              <rect x="1" y="-6" width="4" height="9" rx="1.5"></rect>
+            </g>
+          </defs>
+          <text id="trialLabel" x="22" y="34" fill="#e8eef2" font-family="Consolas" font-size="13" font-weight="600" letter-spacing="1.5">TRIAL 000</text>
+          <g id="statusChip">
+            <rect x="620" y="16" width="260" height="28" rx="4" fill="#0b1015" stroke="#1f2c36"></rect>
+            <text id="statusText" x="750" y="35" text-anchor="middle" fill="#e8eef2" font-family="Segoe UI" font-size="12.5">Press “Run 100 trials”</text>
+          </g>
+          <!-- side track -->
+          <path id="sideSleepers" d="M300 270 L560 132 L900 132" fill="none" stroke="#24313b" stroke-width="26" stroke-dasharray="5 13"></path>
+          <path d="M300 270 L560 132 L900 132" fill="none" stroke="#5b6b78" stroke-width="13"></path>
+          <path d="M300 270 L560 132 L900 132" fill="none" stroke="#111a21" stroke-width="7"></path>
+          <!-- main track -->
+          <path d="M0 270 L900 270" fill="none" stroke="#24313b" stroke-width="26" stroke-dasharray="5 13"></path>
+          <path d="M0 270 L900 270" fill="none" stroke="#5b6b78" stroke-width="13"></path>
+          <path d="M0 270 L900 270" fill="none" stroke="#111a21" stroke-width="7"></path>
+          <!-- labels -->
+          <g font-family="Consolas" font-size="11" letter-spacing="1">
+            <rect x="590" y="54" width="200" height="24" rx="3" fill="#0b1015" stroke="#1f2c36"></rect>
+            <text id="sideLabel" x="690" y="70" text-anchor="middle" fill="#cfd8de">SIDE TRACK · 1 PERSON</text>
+            <rect x="560" y="304" width="210" height="24" rx="3" fill="#0b1015" stroke="#1f2c36"></rect>
+            <text id="mainLabel" x="665" y="320" text-anchor="middle" fill="#cfd8de">MAIN TRACK · 5 PEOPLE</text>
+          </g>
+          <g id="sidePeople" fill="#f6c88f"></g>
+          <g id="mainPeople" fill="#f6c88f"></g>
+          <!-- lever -->
+          <g transform="translate(318 318)">
+            <rect x="-14" y="0" width="28" height="9" rx="2" fill="#2c3a45"></rect>
+            <g id="lever" transform="rotate(-28)">
+              <line x1="0" y1="2" x2="0" y2="-30" stroke="#9fb0bb" stroke-width="3.5" stroke-linecap="round"></line>
+              <circle cx="0" cy="-32" r="5.5" fill="#fbbf24"></circle>
+            </g>
+          </g>
+          <!-- trolley -->
+          <g id="trolley">
+            <rect x="-34" y="-30" width="68" height="30" rx="5" fill="#e4572e"></rect>
+            <rect x="-30" y="-36" width="60" height="8" rx="3" fill="#b8401f"></rect>
+            <rect x="-28" y="-25" width="12" height="10" rx="1.5" fill="#fde8c8"></rect>
+            <rect x="-12" y="-25" width="12" height="10" rx="1.5" fill="#fde8c8"></rect>
+            <rect x="4" y="-25" width="12" height="10" rx="1.5" fill="#fde8c8"></rect>
+            <rect x="20" y="-25" width="9" height="10" rx="1.5" fill="#fde8c8"></rect>
+            <rect x="-34" y="-9" width="68" height="4" fill="#f2c14e"></rect>
+            <circle cx="-20" cy="2" r="5" fill="#1b232a" stroke="#9fb0bb" stroke-width="1.5"></circle>
+            <circle cx="20" cy="2" r="5" fill="#1b232a" stroke="#9fb0bb" stroke-width="1.5"></circle>
+          </g>
+        </svg>
+      </div>
+      <div class="caption">
+        <div class="big" id="setup">5 on the main track. 1 on the side track.</div>
+        <div class="small" id="pace">First 5 trolleys at normal speed. Remaining trials at 10×.</div>
+        <div class="verdict" id="verdict"></div>
+      </div>
+      <div class="wording" id="wording"></div>
+      <div class="controls">
+        <select id="mode">
+          <option value="classic">Classic: 5 on main, 1 on side (as in the video)</option>
+          <option value="swapped">Sanity check: 1 on main, 5 on side</option>
+          <option value="random">Random counts (1–6 on each track)</option>
+        </select>
+        <button class="primary" id="run">Run 100 trials</button>
+        <button id="pause" disabled>Pause</button>
+        <button id="reset">Reset</button>
+      </div>
+    </div>
+
+    <div class="side">
+      <div class="chip" id="playback">1× PLAYBACK</div>
+      <div>
+        <div class="label">Trials completed</div>
+        <div class="count"><span id="done">0</span> <small>/ 100</small></div>
+        <div class="bar"><i id="progress"></i></div>
+      </div>
+      <div class="rows">
+        <div><span>Pull the lever</span><b id="nPull">0</b></div>
+        <div><span>Leave it alone</span><b id="nLeave">0</b></div>
+        <div><span>Chose fewer deaths</span><b id="nFewer">–</b></div>
+      </div>
+      <div>
+        <div class="label">Current choice</div>
+        <div class="choice" id="choice">–</div>
+        <div class="stats" id="choiceP">&nbsp;</div>
+      </div>
+      <div class="cells" id="cells"></div>
+      <div class="stats" id="stats">&nbsp;</div>
+    </div>
+  </div>
+  <div class="foot">Fictional simulation. Each trial is one <b>Choice</b> question (pull the lever / leave it alone) with
+    freshly randomised wording, answered by <span id="backend">…</span>.</div>
+</div>
+
+<script>
+const $ = id => document.getElementById(id);
+const TOTAL = 100;
+const MAIN = { x0: 40, y: 270, junction: 318 };
+const SIDE = { bendX: 560, y: 132 };
+let state;
+
+function freshState() {
+  return { trial: 0, running: false, seed: Math.floor(Math.random() * 1e6), mode: $("mode").value,
+           results: [], prefetch: null, generation: (state ? state.generation + 1 : 0) };
+}
+
+function drawPeople(groupId, n, x0, y) {
+  const g = $(groupId);
+  g.innerHTML = "";
+  for (let i = 0; i < n; i++) {
+    const use = document.createElementNS("http://www.w3.org/2000/svg", "use");
+    use.setAttribute("href", "#figure");
+    use.setAttribute("class", "person");
+    use.setAttribute("transform", `translate(${x0 + i * 22} ${y - 6})`);
+    g.appendChild(use);
+  }
+}
+
+function plural(n, one, many) { return `${n} ${n === 1 ? one : many}`; }
+
+function setScene(main, side) {
+  drawPeople("mainPeople", main, 680, MAIN.y);
+  drawPeople("sidePeople", side, 740, SIDE.y);
+  $("mainLabel").textContent = `MAIN TRACK · ${plural(main, "PERSON", "PEOPLE")}`;
+  $("sideLabel").textContent = `SIDE TRACK · ${plural(side, "PERSON", "PEOPLE")}`;
+  $("setup").textContent = `${main} on the main track. ${side} on the side track.`;
+  setLever(false, 1);
+  placeTrolley(MAIN.x0, MAIN.y, 0);
+}
+
+function placeTrolley(x, y, angle) {
+  $("trolley").setAttribute("transform", `translate(${x} ${y - 6}) rotate(${angle})`);
+}
+
+function setLever(pulled, k) {
+  const angle = -28 + (pulled ? 56 * k : 0);
+  $("lever").setAttribute("transform", `rotate(${angle})`);
+}
+
+function tween(ms, fn) {
+  return new Promise(resolve => {
+    const t0 = performance.now();
+    function step(t) {
+      const k = Math.min(1, (t - t0) / Math.max(ms, 1));
+      fn(k);
+      if (k < 1) requestAnimationFrame(step); else resolve();
+    }
+    requestAnimationFrame(step);
+  });
+}
+const ease = k => k < .5 ? 2 * k * k : 1 - Math.pow(-2 * k + 2, 2) / 2;
+const sleep = ms => new Promise(r => setTimeout(r, ms));
+
+async function animate(res, speed) {
+  const f = 1 / speed;
+  setScene(res.main, res.side);
+  status("Jev decision received");
+  await sleep(250 * f);
+  const pulled = res.choice === "pull";
+  if (pulled) {
+    status("Lever pulled → side track");
+    await tween(320 * f, k => setLever(true, ease(k)));
+  } else {
+    status("Lever left alone → main track");
+    await sleep(320 * f);
+  }
+  // approach the junction
+  await tween(800 * f, k => placeTrolley(MAIN.x0 + (MAIN.junction - MAIN.x0) * ease(k) , MAIN.y, 0));
+  if (pulled) {
+    const angle = Math.atan2(SIDE.y - MAIN.y, SIDE.bendX - MAIN.junction) * 180 / Math.PI;
+    await tween(600 * f, k => placeTrolley(MAIN.junction + (SIDE.bendX - MAIN.junction) * k,
+                                            MAIN.y + (SIDE.y - MAIN.y) * k, angle * Math.sin(Math.PI * Math.min(1, k * 1.1))));
+    await tween(450 * f, k => placeTrolley(SIDE.bendX + (700 - SIDE.bendX) * k, SIDE.y, 0));
+    document.querySelectorAll("#sidePeople .person").forEach(p => p.classList.add("lost"));
+  } else {
+    await tween(900 * f, k => placeTrolley(MAIN.junction + (640 - MAIN.junction) * k, MAIN.y, 0));
+    document.querySelectorAll("#mainPeople .person").forEach(p => p.classList.add("lost"));
+  }
+  status("Trial complete");
+  await sleep(300 * f);
+}
+
+function status(text) { $("statusText").textContent = text; }
+
+async function fetchTrial(n, s) {
+  const r = await fetch("/api/trolley/trial", { method: "POST", headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ trial: n, mode: s.mode, seed: s.seed }) });
+  const j = await r.json();
+  if (j.error) throw new Error(j.error);
+  return j;
+}
+
+function record(res) {
+  state.results.push(res);
+  const n = state.results.length;
+  const pulls = state.results.filter(r => r.choice === "pull").length;
+  const fewer = state.results.filter(r => (r.choice === "pull" ? r.side : r.main) <= Math.min(r.main, r.side)).length;
+  $("done").textContent = n;
+  $("progress").style.width = `${n}%`;
+  $("nPull").textContent = pulls;
+  $("nLeave").textContent = n - pulls;
+  $("nFewer").textContent = `${fewer} / ${n}`;
+  const cell = $("cells").children[n - 1];
+  cell.className = res.choice;
+  cell.title = `Trial ${n}: ${res.choice === "pull" ? "pulled" : "left alone"} · P(pull) ${res.p_pull.toFixed(2)} · ${res.main} vs ${res.side}`;
+  $("choice").textContent = res.choice === "pull" ? "PULL THE LEVER" : "LEAVE IT ALONE";
+  $("choice").className = "choice " + res.choice;
+  const p = res.choice === "pull" ? res.p_pull : 1 - res.p_pull;
+  $("choiceP").textContent = `${Math.round(p * 100)}% choice probability`;
+  const ps = state.results.map(r => r.p_pull);
+  const avg = a => a.reduce((x, y) => x + y, 0) / a.length;
+  $("stats").innerHTML = `P(pull) avg ${avg(ps).toFixed(2)} · min ${Math.min(...ps).toFixed(2)} · max ${Math.max(...ps).toFixed(2)}<br>` +
+                         `decision time avg ${Math.round(avg(state.results.map(r => r.ms)))} ms`;
+}
+
+function verdict() {
+  const n = state.results.length;
+  const pulls = state.results.filter(r => r.choice === "pull").length;
+  const fewer = state.results.filter(r => (r.choice === "pull" ? r.side : r.main) <= Math.min(r.main, r.side)).length;
+  let text = `${n} / ${TOTAL}: pulled the lever <b>${pulls}</b> times, left it alone ${n - pulls} times.`;
+  if (state.mode === "classic") text += pulls === n ? " The model chose to save the five every time." : "";
+  if (state.mode !== "classic")
+    text += ` It picked the option with fewer deaths in <b>${fewer} / ${n}</b> trials` +
+            (fewer < n ? " - a fast System-1 model reacts to the story pattern, it does not count." : ".");
+  $("verdict").innerHTML = text;
+}
+
+async function run() {
+  state.running = true;
+  const gen = state.generation;
+  $("run").disabled = true; $("pause").disabled = false; $("mode").disabled = true;
+  try {
+    while (state.running && state.trial < TOTAL && gen === state.generation) {
+      const n = state.trial + 1;
+      const speed = n <= 5 ? 1 : 10;
+      $("playback").textContent = `${speed}× PLAYBACK`;
+      $("trialLabel").textContent = `TRIAL ${String(n).padStart(3, "0")}`;
+      [...$("cells").children].forEach((c, i) => c.classList.toggle("now", i === n - 1));
+      if (!(state.prefetch && state.prefetch.n === n)) {
+        status("Waiting for Jev decision …");
+        state.prefetch = { n, promise: fetchTrial(n, state) };
+      }
+      const res = await state.prefetch.promise;
+      if (gen !== state.generation) return;
+      state.prefetch = n < TOTAL ? { n: n + 1, promise: fetchTrial(n + 1, state) } : null;
+      if (state.prefetch) state.prefetch.promise.catch(() => {});
+      $("wording").textContent = `Trial ${n} wording: “${res.text}”`;
+      await animate(res, speed);
+      if (gen !== state.generation) return;
+      record(res);
+      state.trial = n;
+    }
+    if (state.trial >= TOTAL) { status("Experiment complete"); verdict(); }
+  } catch (err) {
+    $("wording").innerHTML = `<span class="error">${err.message}</span>`;
+  } finally {
+    if (gen === state.generation) {
+      state.running = false;
+      $("run").disabled = state.trial >= TOTAL; $("pause").disabled = true; $("mode").disabled = false;
+      $("run").textContent = state.trial > 0 && state.trial < TOTAL ? "Resume" : "Run 100 trials";
+    }
+  }
+}
+
+function reset() {
+  state = freshState();
+  $("cells").innerHTML = Array.from({ length: TOTAL }, () => "<span></span>").join("");
+  ["done", "nPull", "nLeave"].forEach(id => $(id).textContent = "0");
+  $("nFewer").textContent = "–";
+  $("progress").style.width = "0";
+  $("choice").textContent = "–"; $("choice").className = "choice";
+  $("choiceP").innerHTML = "&nbsp;"; $("stats").innerHTML = "&nbsp;"; $("verdict").innerHTML = ""; $("wording").textContent = "";
+  $("trialLabel").textContent = "TRIAL 000"; $("playback").textContent = "1× PLAYBACK";
+  $("run").disabled = false; $("pause").disabled = true; $("mode").disabled = false; $("run").textContent = "Run 100 trials";
+  const counts = { classic: [5, 1], swapped: [1, 5], random: [3, 3] }[state.mode];
+  setScene(...counts);
+  $("pace").textContent = state.mode === "random"
+    ? "Counts change every trial. First 5 trolleys at normal speed, the rest at 10×."
+    : "First 5 trolleys at normal speed. Remaining trials at 10×.";
+  status("Press “Run 100 trials”");
+}
+
+$("run").onclick = () => run();
+$("pause").onclick = () => { state.running = false; $("pause").disabled = true; status("Paused"); };
+$("reset").onclick = reset;
+$("mode").onchange = reset;
+fetch("/api/config").then(r => r.json()).then(c => $("backend").textContent = c.backend).catch(() => {});
+reset();
+</script>
+</body>
+</html>

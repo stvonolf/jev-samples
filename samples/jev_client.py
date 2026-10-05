@@ -36,7 +36,7 @@ os.environ.setdefault("TOKENIZERS_PARALLELISM", "false")
 warnings.filterwarnings("ignore", message=".*ships invalid temperatures.*")
 
 if hasattr(sys.stdout, "reconfigure"):
-    sys.stdout.reconfigure(encoding="utf-8")
+    sys.stdout.reconfigure(encoding="utf-8", line_buffering=True)
 
 State = Any  # str | dict | list - exactly what Jev accepts as `state`
 Questions = Dict[str, Dict[str, Any]]

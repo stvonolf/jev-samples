@@ -1,0 +1,224 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<link rel="icon" href="data:,">
+<title>How hot is this message? - Score demo</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<style>
+  :root { --bg:#0b1015; --panel:#111a21; --line:#1f2c36; --text:#e8eef2; --muted:#7f909c;
+          --red:#f87171; --amber:#fbbf24; --magenta:#e040fb; --teal:#5eead4; }
+  * { box-sizing:border-box; }
+  body { margin:0; background:var(--bg); color:var(--text); font:15px/1.45 "Segoe UI", system-ui, sans-serif; }
+  .wrap { max-width:1280px; margin:0 auto; padding:28px 32px 36px; }
+  .kicker { font:600 11px/1 Consolas, monospace; letter-spacing:.12em; color:var(--muted); text-transform:uppercase; }
+  .kicker a { color:var(--muted); text-decoration:none; } .kicker a:hover { color:var(--teal); }
+  h1 { font-size:30px; margin:10px 0 4px; font-weight:600; }
+  .sub { color:#9fb0bb; margin:0 0 22px; max-width:900px; }
+  .grid { display:grid; grid-template-columns: 1fr 1.15fr; gap:22px; }
+  .panel { background:var(--panel); border:1px solid var(--line); border-radius:10px; padding:18px; }
+  .label { font:600 10.5px Consolas, monospace; letter-spacing:.12em; color:var(--muted); text-transform:uppercase; }
+  textarea { width:100%; height:150px; margin-top:8px; resize:vertical; background:#0b1218; color:var(--text);
+             border:1px solid var(--line); border-radius:8px; padding:12px; font:15px/1.5 "Segoe UI", sans-serif; outline:none; }
+  textarea:focus { border-color:#2f4a5a; }
+  .row { display:flex; gap:8px; flex-wrap:wrap; align-items:center; margin-top:10px; }
+  button { font:600 13px "Segoe UI", sans-serif; color:var(--text); background:#16222b; border:1px solid var(--line);
+           border-radius:6px; padding:7px 12px; cursor:pointer; }
+  button.primary { background:var(--teal); border-color:var(--teal); color:#06201c; }
+  button:disabled { opacity:.5; cursor:default; }
+  .chips button { font-weight:400; font-size:12px; border-radius:999px; padding:4px 11px; color:#cfd8de; }
+  .status { margin-left:auto; color:var(--muted); font-size:12px; }
+  .status.busy::before { content:""; display:inline-block; width:8px; height:8px; border-radius:50%; background:var(--amber);
+                         margin-right:6px; animation: pulse 1s infinite; }
+  @keyframes pulse { 50% { opacity:.25; } }
+  .gauges { display:grid; grid-template-columns: 1fr 1fr; gap:14px; }
+  .gauge { background:#0d151b; border:1px solid var(--line); border-radius:8px; padding:12px 14px; }
+  .ghead { display:flex; justify-content:space-between; align-items:baseline; }
+  .gname { font-weight:600; }
+  .gval { font: 600 22px Consolas, monospace; }
+  .gval small { font-size:12px; color:var(--muted); }
+  .track { position:relative; display:flex; gap:3px; height:22px; margin:10px 0 6px; }
+  .seg { flex:1; border-radius:3px; background:#1a2630; transition: background .5s; }
+  .needle { position:absolute; top:-5px; width:3px; height:32px; margin-left:-1.5px; background:#fff; border-radius:2px;
+            box-shadow:0 0 8px rgba(255,255,255,.6); transition:left .7s cubic-bezier(.2,.8,.2,1); left:0; }
+  .labels { display:flex; gap:3px; font-size:10.5px; color:var(--muted); }
+  .labels span { flex:1; text-align:center; line-height:1.2; }
+  .gfoot { font-size:11px; color:var(--muted); margin-top:6px; }
+  .route { margin-top:14px; }
+  .pbar { height:10px; background:#1a2630; border-radius:5px; overflow:hidden; margin:8px 0 10px; }
+  .pbar i { display:block; height:100%; width:0; border-radius:5px; transition: width .7s, background .7s; }
+  .decision { font-size:19px; font-weight:600; }
+  .meta { color:var(--muted); font-size:12px; margin-top:4px; }
+  .trail { margin-top:14px; }
+  .legend { display:flex; gap:14px; font-size:11.5px; color:var(--muted); margin-top:6px; }
+  .legend i { display:inline-block; width:10px; height:3px; margin-right:5px; vertical-align:middle; }
+  .foot { margin-top:22px; color:var(--muted); font-size:12px; }
+  .error { color:var(--red); }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="kicker"><a href="/">Jev demos</a> / Score</div>
+  <h1>How hot is this message?</h1>
+  <p class="sub">Four <b>Score</b> questions about one customer message, re-evaluated while you type. A Score answer is
+    probability-weighted, so it can land <i>between</i> levels - watch the needles move. Priority and routing are plain code.</p>
+
+  <div class="grid">
+    <div>
+      <div class="panel">
+        <div class="label">Customer message</div>
+        <textarea id="msg" spellcheck="false"></textarea>
+        <div class="row">
+          <button class="primary" id="play">▶ Play escalation</button>
+          <button id="clear">Clear</button>
+          <span class="status" id="status">&nbsp;</span>
+        </div>
+        <div class="row chips" id="chips"></div>
+      </div>
+      <div class="panel trail">
+        <div class="label">Score trail (0 = lowest level, 1 = highest)</div>
+        <svg id="trail" viewBox="0 0 560 150" width="100%" height="150" preserveAspectRatio="none"></svg>
+        <div class="legend" id="legend"></div>
+      </div>
+    </div>
+
+    <div>
+      <div class="gauges" id="gauges"></div>
+      <div class="panel route">
+        <div class="label">Priority (computed in code: 0.40 frustration + 0.35 urgency + 0.25 churn)</div>
+        <div class="pbar"><i id="pbar"></i></div>
+        <div class="decision" id="decision">–</div>
+        <div class="meta" id="meta">&nbsp;</div>
+      </div>
+    </div>
+  </div>
+  <div class="foot">Backend: <span id="backend">…</span></div>
+</div>
+
+<script>
+const $ = id => document.getElementById(id);
+const GAUGES = [
+  { id: "frustration", name: "Frustration", color: "#f87171", rgb: "248,113,113" },
+  { id: "urgency", name: "Urgency", color: "#fbbf24", rgb: "251,191,36" },
+  { id: "churn", name: "Churn risk", color: "#e040fb", rgb: "224,64,251" },
+  { id: "sentiment", name: "Sentiment", color: "#5eead4", rgb: "94,234,212" },
+];
+const ESCALATION = ["Hi, I have a question about my March invoice.", " I was charged twice.",
+  " This is the third time I'm writing to you.", " Nobody answers!",
+  " If this isn't fixed today, we will cancel our contract."];
+const SAMPLES = ["Thanks, your team solved it quickly - great service!",
+  "Could you send me the pricing for 50 more seats? We'd like to expand next quarter.",
+  "Your app crashed during our live demo with a client. Unacceptable.",
+  "No rush, but could you update my billing address sometime?"];
+let seq = 0, timer = null, playing = false;
+const history = [];
+
+function buildGauges() {
+  $("gauges").innerHTML = GAUGES.map(g => `
+    <div class="gauge" id="g-${g.id}">
+      <div class="ghead"><span class="gname" style="color:${g.color}">${g.name}</span>
+        <span class="gval"><span class="v">–</span> <small class="max"></small></span></div>
+      <div class="track"><div class="needle"></div></div>
+      <div class="labels"></div>
+      <div class="gfoot">&nbsp;</div>
+    </div>`).join("");
+  $("legend").innerHTML = GAUGES.map(g => `<span><i style="background:${g.color}"></i>${g.name}</span>`).join("");
+}
+
+function renderGauge(g, a) {
+  const el = $(`g-${g.id}`);
+  const levels = Object.keys(a.legend).sort((x, y) => x - y);
+  const track = el.querySelector(".track");
+  if (track.querySelectorAll(".seg").length !== levels.length) {
+    track.querySelectorAll(".seg").forEach(s => s.remove());
+    levels.forEach(() => track.insertAdjacentHTML("afterbegin", '<div class="seg"></div>'));
+    el.querySelector(".labels").innerHTML = levels.map(l => `<span>${a.legend[l]}</span>`).join("");
+    el.querySelector(".max").textContent = `/ ${levels.length - 1}`;
+  }
+  track.querySelectorAll(".seg").forEach((s, i) => {
+    const p = a.probabilities[levels[i]] || 0;
+    s.style.background = `rgba(${g.rgb}, ${0.08 + 0.85 * p})`;
+    s.title = `${a.legend[levels[i]]}: p = ${p.toFixed(2)}`;
+  });
+  el.querySelector(".needle").style.left = `${((a.score + 0.5) / levels.length) * 100}%`;
+  el.querySelector(".v").textContent = a.score.toFixed(2);
+  el.querySelector(".gfoot").textContent = `confidence ${a.confidence.toFixed(2)} · ` +
+    levels.map(l => `${(a.probabilities[l] * 100).toFixed(0)}%`).join(" / ");
+}
+
+function renderTrail() {
+  const svg = $("trail"), W = 560, H = 150, pad = 10;
+  const pts = history.slice(-14);
+  const x = i => pad + (pts.length < 2 ? 0 : i * (W - 2 * pad) / (pts.length - 1));
+  const y = v => H - pad - v * (H - 2 * pad);
+  let html = [0, .5, 1].map(v => `<line x1="0" x2="${W}" y1="${y(v)}" y2="${y(v)}" stroke="#1f2c36" stroke-width="1"/>`).join("");
+  for (const g of GAUGES) {
+    const line = pts.map((h, i) => `${x(i)},${y(h[g.id])}`).join(" ");
+    html += `<polyline points="${line}" fill="none" stroke="${g.color}" stroke-width="2.5" stroke-linejoin="round"/>`;
+    html += pts.map((h, i) => `<circle cx="${x(i)}" cy="${y(h[g.id])}" r="3" fill="${g.color}"/>`).join("");
+  }
+  svg.innerHTML = html;
+}
+
+async function score(text) {
+  text = text.trim();
+  if (!text) return;
+  const mine = ++seq;
+  $("status").textContent = "scoring…"; $("status").className = "status busy";
+  try {
+    const r = await fetch("/api/score", { method: "POST", headers: { "Content-Type": "application/json" },
+                                          body: JSON.stringify({ text }) });
+    const res = await r.json();
+    if (res.error) throw new Error(res.error);
+    if (mine !== seq) return res;             // a newer edit is on its way
+    for (const g of GAUGES) renderGauge(g, res.answers[g.id]);
+    const p = res.priority;
+    $("pbar").style.width = `${Math.round(p * 100)}%`;
+    $("pbar").style.background = p >= .75 ? "var(--red)" : p >= .6 ? "var(--amber)" : p >= .45 ? "#fde68a" : "var(--teal)";
+    $("decision").textContent = res.route;
+    $("meta").textContent = `priority ${p.toFixed(2)} · ${res.questions} Score questions, one forward pass · ` +
+                            (res.cached ? "cached" : `${res.ms} ms`);
+    const point = {};
+    for (const g of GAUGES) { const a = res.answers[g.id]; point[g.id] = a.score / (Object.keys(a.legend).length - 1); }
+    history.push(point); renderTrail();
+    $("status").textContent = res.cached ? "cached" : `${res.ms} ms`; $("status").className = "status";
+    return res;
+  } catch (err) {
+    $("status").innerHTML = `<span class="error">${err.message}</span>`; $("status").className = "status";
+  }
+}
+
+function scheduleScore() {
+  clearTimeout(timer);
+  timer = setTimeout(() => score($("msg").value), 700);
+}
+
+const sleep = ms => new Promise(r => setTimeout(r, ms));
+
+async function playEscalation() {
+  playing = true; $("play").disabled = true;
+  $("msg").value = ""; history.length = 0;
+  for (const sentence of ESCALATION) {
+    for (const ch of sentence) { $("msg").value += ch; await sleep(18); }
+    await score($("msg").value);
+    await sleep(900);
+  }
+  playing = false; $("play").disabled = false;
+}
+
+$("msg").addEventListener("input", () => { if (!playing) scheduleScore(); });
+$("play").onclick = playEscalation;
+$("clear").onclick = () => { $("msg").value = ""; $("msg").focus(); };
+for (const s of SAMPLES) {
+  const b = document.createElement("button");
+  b.textContent = s.length > 46 ? s.slice(0, 44) + "…" : s; b.title = s;
+  b.onclick = () => { $("msg").value = s; score(s); };
+  $("chips").appendChild(b);
+}
+buildGauges();
+fetch("/api/config").then(r => r.json()).then(c => $("backend").textContent = c.backend).catch(() => {});
+$("msg").value = ESCALATION[0];
+score(ESCALATION[0]);
+</script>
+</body>
+</html>

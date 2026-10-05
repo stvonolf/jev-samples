@@ -22,6 +22,12 @@ OUT = HERE / "Jev_Team_Overview.pptx"
 VIDEO_1 = "https://www.youtube.com/watch?v=vj7hysh0mOI"
 VIDEO_2 = "https://www.youtube.com/watch?v=I34qxJjyms0"
 VIDEO_3 = "https://www.youtube.com/watch?v=VE5dsWll06M"
+REPO = "https://github.com/stvonolf/jev-samples"
+LAYA = "https://huggingface.co/convaiinnovations/laya"
+FOUNDRY_ARTICLE = ("https://techcommunity.microsoft.com/blog/azuredevcommunityblog/"
+                   "using-jev-with-agents-in-microsoft-foundry-for-model-evaluation/4559851")
+TYPESAFE_DOCS = "https://docs.typesafe.ai"
+SLIDES = 6
 
 BG = RGBColor(0x0F, 0x11, 0x17)
 PANEL = RGBColor(0x1A, 0x1D, 0x27)
@@ -128,6 +134,21 @@ def caption(slide, x, y, w, parts, link=None):
         shp.click_action.hyperlink.address = link
         shp.text_frame.paragraphs[0].runs[-1].font.underline = True
     return shp
+
+
+def link(slide, x, y, w, label, url, size=12, color=SCORE, prefix=None):
+    parts = ([(prefix, {"color": MUTED})] if prefix else []) + [(label, {"color": color, "bold": True})]
+    shp = text(slide, x, y, w, 0.32, [parts], size=size)
+    shp.click_action.hyperlink.address = url
+    shp.text_frame.paragraphs[0].runs[-1].font.underline = True
+    return shp
+
+
+def crop_banner(src, dst, top_px):
+    """Drop the clickbait title banner from a thumbnail, keep the demo collage."""
+    with Image.open(src) as im:
+        im.crop((0, top_px, im.width, im.height)).save(dst, quality=92)
+    return dst
 
 
 NO_STYLE_NO_GRID = "{2D5ABB26-0587-4C30-8999-92F81FD0307C}"
@@ -258,7 +279,7 @@ def render_terminal(path):
 def slide_1(prs):
     s = prs.slides.add_slide(prs.slide_layouts[6])
     set_bg(s)
-    text(s, 0.5, 0.32, 7, 0.3, ["JEV · TEAM BRIEFING  ·  1 / 4"], size=11, color=SCORE, bold=True)
+    text(s, 0.5, 0.32, 7, 0.3, [f"JEV · TEAM BRIEFING  ·  1 / {SLIDES}"], size=11, color=SCORE, bold=True)
     text(s, 0.5, 0.62, 7.6, 1.3, [[("Jev: AI that ", {}), ("decides", {"color": CHOICE}),
                                   (",\nnot chats", {})]], size=36, bold=True, spacing=0.95)
     text(s, 0.5, 2.0, 7.4, 0.6, ["TypeSafe AI's first “System One” model: fast, typed, calibrated "
@@ -301,6 +322,7 @@ def slide_1(prs):
                 text(s, 8.45 + j * 1.45 + 1.27, y + 0.47, 0.22, 0.4, ["›"], size=16, color=MUTED,
                      align=PP_ALIGN.CENTER)
     caption(s, 8.45, 6.68, 4.3, [("Demo from “Building a Harness with Jev” – LangChain", {})], link=VIDEO_3)
+    link(s, 0.5, 6.9, 7.3, "github.com/stvonolf/jev-samples", REPO, size=12, prefix="Slides, samples & UI demos:  ")
 
     notes(s, """
 WHAT: Jev (TypeSafe AI, early access since Sept 2026) is the first "System One" model. You send a state and typed questions (choice / score / noul) to POST /v1/systemone and get typed answers with probabilities back. No text generation.
@@ -320,7 +342,7 @@ Takeaway from video 1: this is less about Jev's novelty and more about the use-c
 def slide_2(prs):
     s = prs.slides.add_slide(prs.slide_layouts[6])
     set_bg(s)
-    header(s, "HOW IT WORKS  ·  2 / 4", "Three primitives, one parallel call",
+    header(s, f"HOW IT WORKS  ·  2 / {SLIDES}", "Three primitives, one parallel call",
            "Like logic gates and registers: your code owns the control flow, Jev answers narrow typed questions.")
 
     cards = [
@@ -390,10 +412,10 @@ LANGCHAIN ("Building a Harness with Jev"): langchain-typesafe exposes TypeSafeCl
 """)
 
 
-def slide_3(prs):
+def slide_3(prs, demos_png):
     s = prs.slides.add_slide(prs.slide_layouts[6])
     set_bg(s)
-    header(s, "FOR MARKETING SOFTWARE  ·  3 / 4", "Thousands of tiny marketing decisions, in milliseconds")
+    header(s, f"FOR MARKETING SOFTWARE  ·  3 / {SLIDES}", "Thousands of tiny marketing decisions, in milliseconds")
 
     rows = [
         ["Use case", "Question Jev answers", "Primitive"],
@@ -409,16 +431,19 @@ def slide_3(prs):
     table(s, 0.5, 1.4, 7.75, [2.05, 4.35, 1.35], rows, row_h=0.43, size=11.5,
           col_colors={2: primitive_color})
 
-    picture(s, ASSETS / "yt_I34qxJjyms0.jpg", 8.5, 1.4, 4.33, link=VIDEO_2)
-    caption(s, 8.5, 3.86, 4.35, [("Video: “Jev Is WAY More Powerful Than We Thought” – Pursuing AI", {})],
-            link=VIDEO_2)
-    text(s, 8.5, 4.2, 4.35, 1.1, [
+    with Image.open(demos_png) as im:
+        img_h = 4.33 * im.height / im.width
+    picture(s, demos_png, 8.5, 1.4, 4.33, link=VIDEO_2)
+    caption(s, 8.5, 1.4 + img_h + 0.04, 4.35,
+            [("Video: “Jev Is WAY More Powerful Than We Thought” – Pursuing AI", {})], link=VIDEO_2)
+    text(s, 8.5, 1.4 + img_h + 0.42, 4.35, 1.6, [
         [("SEO: ", {"bold": True, "color": TEXT}), ("586 pages in 45 s, 584 links placed, 139 rejected, "
                                                     "$0.21 (Claude Opus 5: 21 pages, $1.43)", {})],
-        [("Also: ", {"bold": True, "color": TEXT}), ("driving sim, trolley problem 100/100, "
-                                                     "voice-controlled drawing app, live slop detector, "
-                                                     "Laya playing Snake at ~60 decisions/s", {})],
-    ], size=10.5, color=MUTED, space_after=3)
+        [("Also: ", {"bold": True, "color": TEXT}), ("driving sim, trolley problem 100/100, designer's "
+                                                     "emoji explorer, voice-controlled drawing app, live slop "
+                                                     "detector, Laya playing Snake at ~60 decisions/s", {})],
+        [("We rebuilt two of them ", {"bold": True, "color": SCORE}), ("→ slide 6", {"color": SCORE})],
+    ], size=10.5, color=MUTED, space_after=4)
 
     # decide-then-act loop
     text(s, 0.5, 5.4, 8, 0.3, [[("The decide-then-act loop", {"bold": True}),
@@ -458,12 +483,151 @@ LIMITS: no explanation; bounded answers only; vendor-reported benchmarks measure
 """)
 
 
+def card(slide, x, y, w, h, color, title, items, url, url_label):
+    box(slide, x, y, w, h, fill=PANEL)
+    box(slide, x, y, w, 0.07, fill=color, shape=MSO_SHAPE.RECTANGLE)
+    text(slide, x + 0.18, y + 0.16, w - 0.3, 0.4, [title], size=14.5, bold=True, color=color)
+    text(slide, x + 0.18, y + 0.6, w - 0.3, h - 1.0,
+         [[("•  ", {"color": color}), (item, {})] for item in items], size=10.5, color=TEXT, space_after=5)
+    link(slide, x + 0.18, y + h - 0.4, w - 0.3, url_label, url, size=10, color=color)
+
+
+def slide_access(prs):
+    s = prs.slides.add_slide(prs.slide_layouts[6])
+    set_bg(s)
+    header(s, f"GETTING ACCESS  ·  4 / {SLIDES}", "Jev is not publicly available yet - not even in Microsoft Foundry",
+           "Early access since 15 Sep 2026, sign-up required. Three ways to work with a System One model today:")
+
+    cards = [
+        (NOUL, "①  TypeSafe API  (sign-up)", [
+            "Apply for the preview at typesafe.ai, then create an API key (comes with free credit).",
+            "POST api.typesafe.ai/v1/systemone, model “jev-latest”; SDKs and langchain-typesafe.",
+            "$0.042 per 1M input tokens, output free · 250k tokens/s, 1,200 requests/min.",
+            "Our samples: set JEV_BASE_URL + JEV_API_KEY.",
+        ], TYPESAFE_DOCS, "docs.typesafe.ai"),
+        (SCORE, "②  Microsoft Foundry agent", [
+            "Not in the Foundry model catalog - you bring your own TypeSafe key.",
+            "Add an OpenAPI tool “evaluate_with_jev” (POST /v1/systemone) with a “Bearer <key>” connection.",
+            "Agent instructions: always call Jev, use its values, never classify on its own.",
+            "“The room had no water and a towel was dirty” → billing 0.02 · tone frustrated (.74) · "
+            "urgency 1.81 → handle today.",
+        ], FOUNDRY_ARTICLE, "Microsoft Tech Community article"),
+        (GREEN, "③  Open-source Laya  (no sign-up)", [
+            "Apache-2.0, 421M params, runs on a laptop CPU (~0.3 s per question; ~33 ms on a T4 GPU).",
+            "Same state + questions → typed answers; laya-serve exposes /v1/systemone.",
+            "Zero-shot quality is lower than Jev: test wording, fine-tune for production.",
+            "Powers all our samples and UI demos.",
+        ], LAYA, "huggingface.co/convaiinnovations/laya"),
+    ]
+    for i, (color, title, items, url, label) in enumerate(cards):
+        card(s, 0.5 + i * 4.19, 1.75, 3.95, 3.1, color, title, items, url, label)
+
+    # Foundry pattern (from the Tech Community article)
+    box(s, 0.5, 5.05, 7.45, 2.05, fill=PANEL)
+    text(s, 0.68, 5.13, 7.2, 0.3, [[("Pattern from the Foundry article: ", {"bold": True}),
+                                    ("Jev as a judgement layer", {"color": MUTED})]], size=12)
+    steps = [("User / app", PANEL_2), ("Foundry agent\nor model", PANEL_2), ("Jev judgement", SCORE),
+             ("Business rules\n(code)", PANEL_2), ("Action /\nresponse", PANEL_2)]
+    for i, (label, color) in enumerate(steps):
+        chev = box(s, 0.68 + i * 1.42, 5.55, 1.55, 0.7, fill=color,
+                   shape=MSO_SHAPE.PENTAGON if i == 0 else MSO_SHAPE.CHEVRON)
+        text(s, 0, 0, 0, 0, [label], size=9.5, bold=color == SCORE, color=BG if color == SCORE else TEXT,
+             align=PP_ALIGN.CENTER, anchor=MSO_ANCHOR.MIDDLE, shape=chev)
+    text(s, 0.68, 6.35, 7.15, 0.75, [[
+        ("Explainability for Model-as-a-Service: ", {"bold": True, "color": TEXT}),
+        ("not SHAP-style feature attribution, but a measurable layer that checks an opaque hosted LLM's "
+         "inputs, outputs and proposed actions against explicit criteria - with a confidence to gate on.", {})]],
+         size=10.5, color=MUTED)
+
+    # how to run
+    box(s, 8.15, 5.05, 4.68, 2.05, fill=PANEL, line=GREEN)
+    link(s, 8.3, 5.12, 4.4, "github.com/stvonolf/jev-samples", REPO, size=11.5, color=GREEN, prefix="Run our samples:  ")
+    code = [
+        "git clone https://github.com/stvonolf/jev-samples",
+        "cd jev-samples",
+        "python -m venv .venv",
+        r".venv\Scripts\pip install -r samples\requirements.txt",
+        "cd samples",
+        r"..\.venv\Scripts\python 01_lead_scoring.py",
+        r"..\.venv\Scripts\python 07_ui_demos.py   # UI demos",
+    ]
+    text(s, 8.3, 5.5, 4.45, 1.6, code, size=9, font=MONO, color=TEXT, spacing=1.1)
+
+    notes(s, """
+AVAILABILITY: Jev (TypeSafe AI) has been in early access since 15 Sep 2026. You apply for the preview, then create an API key under "API keys" (free starter credit is typical). It is NOT in the Microsoft Foundry model catalog - there is no one-click deployment.
+
+MICROSOFT FOUNDRY (Microsoft Tech Community, "Using Jev with Agents in Microsoft Foundry for Model Evaluation", 30 Sep 2026):
+- Create a Foundry agent, add an OpenAPI tool with an OpenAPI 3.0 schema for POST https://api.typesafe.ai/v1/systemone (operationId evaluate_with_jev; Noul / Choice / Score question schemas) and a new connection holding the key as "Bearer <key>".
+- Agent instructions: for every support message MUST call evaluate_with_jev, use exactly 'instructions' and 'criteria' properties, model "jev-latest", pass the original message as state, do not classify yourself, show the Jev output.
+- Example from the article: "The room had no water in and one of the towels was dirty" -> billing noul 0.02, tone choice frustrated (0.74, confidence 0.6), urgency score 1.81 (handle today 0.85). The application then routes / escalates / requires human review deterministically.
+- Pattern: User/Application -> Foundry model or agent -> Jev judgement -> deterministic logic -> action/response.
+- Why Jev: consistent evaluation against explicit criteria, structured outputs, classification/routing, guardrails before tool calls, model routing; every decision has a probability for thresholds.
+- Explainability: SHAP-style attribution is hard when the model is only reachable through a hosted API. Jev does not replace SHAP but adds a separate, measurable judgement layer around opaque MaaS models.
+- Pricing (Sept 2026): jev-1.13.0 $0.042 per 1M input tokens, output free; limits 250,000 tokens/s and 1,200 requests/min (subject to change). Typical latency ~70-500 ms.
+
+OPEN SOURCE: Laya (huggingface.co/convaiinnovations/laya) - Apache-2.0, Jev-compatible request/response shape, runs locally; laya-serve exposes POST /v1/systemone so Jev clients only change the base URL. All our samples run on it.
+
+RUN THE SAMPLES: git clone https://github.com/stvonolf/jev-samples; python -m venv .venv; .venv\\Scripts\\python -m pip install -r samples\\requirements.txt; cd samples; ..\\.venv\\Scripts\\python 01_lead_scoring.py (01-06), ..\\.venv\\Scripts\\python 07_ui_demos.py for the browser demos (http://localhost:8765). First run downloads ~0.8 GB of model weights.
+""")
+
+
+def slide_demos(prs, trolley_png, creative_png, score_png):
+    s = prs.slides.add_slide(prs.slide_layouts[6])
+    set_bg(s)
+    header(s, f"LIVE DEMOS  ·  6 / {SLIDES}", "Three live UI demos: Choice, Noul and Score")
+    link(s, 0.5, 1.22, 12.3, r"python samples\07_ui_demos.py  →  http://localhost:8765", REPO, size=13,
+         color=SCORE, prefix="Run:  ")
+
+    panels = [
+        (trolley_png, "Trolley problem ×100", "Choice", CHOICE, [
+            "Rebuilt from the video. 100 trials, randomised wording: pulled the lever 100 / 100 (P 0.75–0.98).",
+            "Sanity check with 1 on main and 5 on side: it still pulls (0 / 13 chose fewer deaths).",
+            "System-1 models react to the story pattern; they don't count.",
+        ]),
+        (creative_png, "Creative emoji pile", "Noul × 235", NOUL, [
+            "Rebuilt from the video. Each emoji is one Noul: “Is this related to: <request>?”; outliers fly up live.",
+            "Good ranking (winter → scarf, coat, gloves, socks); probability levels differ per prompt → relative threshold.",
+            "“starting a band” also picks the bandage.",
+        ]),
+        (score_png, "How hot is this message?", "Score × 4", SCORE, [
+            "Frustration, urgency, churn risk and sentiment, re-scored while you type.",
+            "Answers land between levels: frustration 0.96 → 1.42 → 1.84 → 2.11 → 2.44 as the message escalates.",
+            "Code: priority 0.81 → escalate to retention; a thank-you note → testimonial for marketing.",
+        ]),
+    ]
+    w = 3.95
+    heights = []
+    for png, *_ in panels:
+        with Image.open(png) as im:
+            heights.append(w * im.height / im.width)
+    y = 1.7 + max(heights) + 0.15
+    for i, (png, title, prim, color, lines) in enumerate(panels):
+        x = 0.5 + i * (w + 0.24)
+        picture(s, png, x, 1.7, w)
+        text(s, x, y, w, 0.35, [[(title, {"bold": True}), (f"   {prim}", {"color": color, "bold": True})]], size=13)
+        text(s, x, y + 0.38, w, 2.3, [[("•  ", {"color": color}), (line, {})] for line in lines],
+             size=10.5, color=MUTED, space_after=4)
+
+    notes(s, """
+SAMPLE 07 (samples/07_ui_demos.py): a stdlib-only web server on top of jev_client.DecisionClient - so it runs on local Laya by default and on TypeSafe Jev when JEV_BASE_URL / JEV_API_KEY are set. Open http://localhost:8765. One demo per primitive.
+
+TROLLEY (/trolley, Choice), modelled on the "The trolley problem, 100 times" demo from video 2 (X post by @FinanceYF5): one Choice per trial ("pull_the_lever" vs "leave_it_alone", criteria spell out who dies). Each trial uses freshly randomised wording (vehicle, people, sentence template), so the 100 decisions are not identical calls. First 5 trials at 1x, then 10x, like the original. Classic mode reproduces the video (100/100 pull). Sanity-check mode swaps the counts (1 on main, 5 on side) - Laya still pulls the lever (0 of 13 trials chose fewer deaths in our run), and a random-counts mode shows the same. Lesson: fast decision models pattern-match; put arithmetic and hard rules in code.
+
+CREATIVE (/creative, Noul), modelled on the designer demo (@heystefan_): type a request, every emoji in a pile of ~235 gets a Noul. Emoji that stand out for the request animate up under the prompt as decisions stream in, 8 per request. Because P(related) levels vary by prompt (wear ~0.9 max, lose weight ~0.3 max), the UI selects relative outliers (mean + 2.5 sd, at most 12). Speed on our laptop CPU: ~0.15-0.3 s per emoji decision, so a brand-new prompt takes ~40-75 s; the suggested prompts are pre-computed and cached at server start so they replay instantly. On a GPU or the Jev API this is real time.
+
+SCORE (/score): "How hot is this message?" - four Score questions about one customer message (frustration: calm/slightly annoyed/frustrated/furious; urgency: no time pressure ... emergency; churn risk: very unlikely ... about to cancel; sentiment: negative/neutral/positive), re-evaluated 0.7 s after you stop typing (~1.3-1.5 s per evaluation on the laptop CPU). Each gauge shades the levels by probability and puts a needle at the probability-weighted score, so you can see it land between levels. "Play escalation" types an invoice complaint sentence by sentence: frustration 0.96 -> 1.42 -> 1.84 -> 2.11 -> 2.44, churn jumps to 2.84 at "we will cancel". Priority = 0.40 frustration + 0.35 urgency + 0.25 churn (normalised) is computed in code and mapped to a route (normal queue / reply today / priority / escalate to retention; happy customers -> testimonial for marketing). We first tried scoring short email subject lines - only urgency separated well, so Score works best on richer text.
+
+WHAT WE TRIED (creative): grouped Choice (10 emoji + "none" per question) was faster but less precise; mean-pooled encoder embeddings as a shortlist were no better than random; the emoji + name state with "Is this related to: X?" had the best ranking (AUC ~0.9 on labelled sets, except physics questions like magnets).
+""")
+
+
 def slide_4(prs, terminal_png, terminal_size):
     s = prs.slides.add_slide(prs.slide_layouts[6])
     set_bg(s)
-    header(s, "HANDS-ON  ·  4 / 4", "We built it: 6 samples running locally on Laya",
-           "Laya: open-source (Apache-2.0), Jev-compatible, 421M params, same /v1/systemone shape. "
-           "Runs on a laptop CPU.")
+    header(s, f"HANDS-ON  ·  5 / {SLIDES}", "We built it: 7 samples running locally on Laya")
+    text(s, 0.5, 1.22, 7.8, 0.4, ["Laya: open-source (Apache-2.0), Jev-compatible, 421M params. Runs on a laptop CPU."],
+         size=14, color=MUTED)
+    link(s, 8.45, 1.25, 4.4, "github.com/stvonolf/jev-samples", REPO, size=13, prefix="Code:  ")
 
     rows = [
         ["#", "Sample", "Primitives", "What happened on our laptop"],
@@ -473,8 +637,9 @@ def slide_4(prs, terminal_png, terminal_size):
         ["04", "Social feed monitor", "Noul + Score + Choice", "3/3 slop posts hidden; complaint → support, cancellation → retention"],
         ["05", "Command bar", "Choice", "“cut meta prospecting in half” → change_budget(…, 50%); vague → “did you mean…?”"],
         ["06", "Agent harness", "Choice + Noul", "48% LLM cost saved by routing; 6/6 tool calls gated; fake claims caught"],
+        ["07", "UI demos (browser)", "Choice + Score + Noul", "Trolley ×100, creative emoji pile, live Score gauges for customer messages → slide 6"],
     ]
-    table(s, 0.5, 1.8, 7.7, [0.42, 1.85, 1.7, 3.73], rows, row_h=0.5, size=10.5,
+    table(s, 0.5, 1.75, 7.7, [0.42, 1.85, 1.7, 3.73], rows, row_h=0.44, size=10.5,
           first_col_color=MUTED, col_colors={1: lambda v: TEXT, 2: lambda v: primitive_color(v)})
 
     w = 4.38
@@ -503,7 +668,7 @@ def slide_4(prs, terminal_png, terminal_size):
     ], size=10.5, color=TEXT, space_after=2)
 
     notes(s, """
-REPO: samples/ - six runnable Python samples + jev_client.py (local Laya backend or any Jev-compatible HTTP endpoint via JEV_BASE_URL / JEV_API_KEY). Run: python -m venv .venv; .venv\\Scripts\\pip install -r samples\\requirements.txt; cd samples; ..\\.venv\\Scripts\\python 01_lead_scoring.py
+REPO: https://github.com/stvonolf/jev-samples - samples/ has seven runnable Python samples + jev_client.py (local Laya backend or any Jev-compatible HTTP endpoint via JEV_BASE_URL / JEV_API_KEY). Run: git clone https://github.com/stvonolf/jev-samples; cd jev-samples; python -m venv .venv; .venv\\Scripts\\python -m pip install -r samples\\requirements.txt; cd samples; ..\\.venv\\Scripts\\python 01_lead_scoring.py (01-06 are console samples); ..\\.venv\\Scripts\\python 07_ui_demos.py starts the browser demos on http://localhost:8765.
 
 LAYA (huggingface.co/convaiinnovations/laya): ModernBERT-large backbone (395M) + a decision head trained from scratch, 421M total; multilingual checkpoint on mmBERT-base for 100+ languages; trained with RLCD-style proper scoring rules. laya-serve exposes the same POST /v1/systemone request/response shape as TypeSafe Jev. Author-reported vs Jev (third-party numbers, different setups): 7.8x faster on a T4 GPU (32.8 ms vs 236-276 ms p50), better calibration after temperature fitting, but Jev is better with >20 options (Banking77: 0.87 vs 0.43). The base checkpoint scores 0.36 on the typed-decisions benchmark; the fine-tuned typed-decisions checkpoint 0.77 - fine-tuning matters.
 
@@ -518,14 +683,17 @@ NEXT STEPS: one pilot use case, label data, measure Laya vs Jev, ship behind con
 def main():
     terminal_png = ASSETS / "terminal_06_agent_harness.png"
     size = render_terminal(terminal_png)
+    demos_png = crop_banner(ASSETS / "yt_I34qxJjyms0.jpg", ASSETS / "yt_I34qxJjyms0_demos.jpg", top_px=144)
 
     prs = Presentation()
     prs.slide_width = Inches(13.333)
     prs.slide_height = Inches(7.5)
     slide_1(prs)
     slide_2(prs)
-    slide_3(prs)
+    slide_3(prs, demos_png)
+    slide_access(prs)
     slide_4(prs, terminal_png, size)
+    slide_demos(prs, ASSETS / "ui_trolley.png", ASSETS / "ui_creative.png", ASSETS / "ui_score.png")
     prs.core_properties.title = "Jev - AI that decides, not chats"
     prs.core_properties.subject = "Team briefing: Jev, System One models and marketing software"
     prs.save(OUT)
